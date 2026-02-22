@@ -13,7 +13,9 @@ export default function AcceptInvite() {
   const navigate = useNavigate();
   const { user, loading: authLoading, signInWithGoogle, refreshMembership } = useAuth();
 
-  const [status, setStatus] = useState<"loading" | "needs-login" | "accepting" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "needs-login" | "accepting" | "success" | "error">(
+    "loading",
+  );
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
@@ -47,6 +49,9 @@ export default function AcceptInvite() {
       }
 
       await refreshMembership();
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("accepted-invite", "true");
+      }
       setStatus("success");
       toast({ title: "Convite aceito!", description: "Bem-vindo ao grupo." });
 

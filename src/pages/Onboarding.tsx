@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,14 +25,34 @@ export default function Onboarding() {
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [phone, setPhone] = useState("");
 
-  // Group creation (admin flow)
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [splittingRule, setSplittingRule] = useState<"equal" | "percentage">("equal");
 
   const [saving, setSaving] = useState(false);
+  const [inviteFlag, setInviteFlag] = useState(false);
 
-  const hasInvite = !!membership; // user already accepted an invite
+  const hasInvite = !!membership || inviteFlag;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setInviteFlag(window.sessionStorage.getItem("accepted-invite") === "true");
+  }, []);
+
+  useEffect(() => {
+    if (!membership) return;
+    if (typeof window === "undefined") return;
+    window.sessionStorage.removeItem("accepted-invite");
+    setInviteFlag(false);
+  }, [membership]);
+
+  const clearInviteFlag = () => {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.removeItem("accepted-invite");
+    setInviteFlag(false);
+  };
+
+  const hasInviteParam = hasInvite;
 
   const handleCpfChange = (value: string) => {
     const formatted = formatCPF(value);
@@ -60,27 +80,26 @@ export default function Onboarding() {
 
     setSaving(true);
     try {
-      // Save CPF
       const cleanedCpf = cpf.replace(/\D/g, "");
       const { error: cpfErr } = await supabase
         .from("profile_sensitive")
         .upsert({ user_id: user.id, cpf: cleanedCpf });
       if (cpfErr) throw cpfErr;
 
-      // Update profile
       const { error: profileErr } = await supabase
         .from("profiles")
         .update({
           full_name: fullName.trim(),
           phone: phone.trim() || null,
-          onboarding_completed: hasInvite, // if has invite, done. If admin, wait for group step.
+          onboarding_completed: hasInviteParam,
         })
         .eq("id", user.id);
       if (profileErr) throw profileErr;
 
-      if (hasInvite) {
+      if (hasInviteParam) {
         await refreshProfile();
         toast({ title: "Bem-vindo!", description: "Seu cadastro foi concluído." });
+        clearInviteFlag();
         navigate("/", { replace: true });
       } else {
         setStep("group");
@@ -107,7 +126,6 @@ export default function Onboarding() {
       });
       if (error) throw error;
 
-      // Mark onboarding as completed
       await supabase
         .from("profiles")
         .update({ onboarding_completed: true })
@@ -116,6 +134,7 @@ export default function Onboarding() {
       await Promise.all([refreshProfile(), refreshMembership()]);
 
       toast({ title: "Grupo criado!", description: `"${groupName}" está pronto. Convide seus moradores.` });
+      clearInviteFlag();
       navigate("/", { replace: true });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -124,6 +143,12 @@ export default function Onboarding() {
     }
   };
 
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name);
+    }
+  }, [profile]);
+
   if (step === "terms") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -131,19 +156,36 @@ export default function Onboarding() {
           <CardHeader>
             <CardTitle className="font-serif text-2xl">Termos de Uso</CardTitle>
             <CardDescription>
-              {hasInvite
+              {hasInviteParam
                 ? "Você foi convidado para uma moradia. Leia e aceite os termos para continuar."
                 : "Ao continuar, você será o administrador de uma nova moradia."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="rounded-lg border bg-muted/50 p-4 text-sm text-muted-foreground max-h-60 overflow-y-auto space-y-3">
-              <p><strong>1. Dados pessoais:</strong> Seu CPF será armazenado de forma segura e visível apenas para você e o administrador do seu grupo.</p>
-              <p><strong>2. Despesas:</strong> O administrador é responsável por registrar despesas coletivas e definir regras de rateio.</p>
-              <p><strong>3. Comprovantes:</strong> Pagamentos devem ser acompanhados de comprovantes (fotos) para prestação de contas.</p>
-              <p><strong>4. Transparência:</strong> Todas as movimentações financeiras são registradas e visíveis aos membros do grupo.</p>
-              <p><strong>5. Sugestões:</strong> Moradores podem sugerir alterações, que serão avaliadas pelo administrador.</p>
-              <p><strong>6. Saída:</strong> Ao deixar o grupo, você poderá exportar todo o seu histórico de dados.</p>
+              <p>
+                <strong>1. Dados pessoais:</strong> Seu CPF será armazenado de forma segura e visível apenas para
+                você e o administrador do seu grupo.
+              </p>
+              <p>
+                <strong>2. Despesas:</strong> O administrador é responsável por registrar despesas coletivas e definir
+                regras de rateio.
+              </p>
+              <p>
+                <strong>3. Comprovantes:</strong> Pagamentos devem ser acompanhados de comprovantes (fotos) para
+                prestação de contas.
+              </p>
+              <p>
+                <strong>4. Transparência:</strong> Todas as movimentações financeiras são registradas e visíveis aos
+                membros do grupo.
+              </p>
+              <p>
+                <strong>5. Sugestões:</strong> Moradores podem sugerir alterações, que serão avaliadas pelo
+                administrador.
+              </p>
+              <p>
+                <strong>6. Saída:</strong> Ao deixar o grupo, você poderá exportar todo o seu histórico de dados.
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -157,12 +199,7 @@ export default function Onboarding() {
               </Label>
             </div>
 
-            <Button
-              onClick={() => setStep("cpf")}
-              disabled={!accepted}
-              className="w-full"
-              size="lg"
-            >
+            <Button onClick={() => setStep("cpf")} disabled={!accepted} className="w-full" size="lg">
               Continuar <ChevronRight className="h-4 w-4" />
             </Button>
           </CardContent>
@@ -177,9 +214,7 @@ export default function Onboarding() {
         <Card className="w-full max-w-lg">
           <CardHeader>
             <CardTitle className="font-serif text-2xl">Seus Dados</CardTitle>
-            <CardDescription>
-              Complete seu cadastro para continuar.
-            </CardDescription>
+            <CardDescription>Complete seu cadastro para continuar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
@@ -203,19 +238,12 @@ export default function Onboarding() {
                 className={cpfError ? "border-destructive" : ""}
               />
               {cpfError && <p className="text-sm text-destructive">{cpfError}</p>}
-              <p className="text-xs text-muted-foreground">
-                Visível apenas para você e o administrador do grupo.
-              </p>
+              <p className="text-xs text-muted-foreground">Visível apenas para você e o administrador do grupo.</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone (opcional)</Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(00) 00000-0000"
-              />
+              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(00) 00000-0000" />
             </div>
 
             <div className="flex gap-3">
@@ -224,8 +252,8 @@ export default function Onboarding() {
               </Button>
               <Button onClick={handleSave} disabled={saving} className="flex-1">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {hasInvite ? "Concluir Cadastro" : "Próximo"}
-                {!hasInvite && <ChevronRight className="h-4 w-4" />}
+                {hasInviteParam ? "Concluir Cadastro" : "Próximo"}
+                {!hasInviteParam && <ChevronRight className="h-4 w-4" />}
               </Button>
             </div>
           </CardContent>
@@ -234,25 +262,17 @@ export default function Onboarding() {
     );
   }
 
-  // Step: group creation (admin only)
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle className="font-serif text-2xl">Criar Moradia</CardTitle>
-          <CardDescription>
-            Você será o administrador deste grupo. Configure os detalhes da moradia.
-          </CardDescription>
+          <CardDescription>Você será o administrador deste grupo. Configure os detalhes da moradia.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="groupName">Nome da moradia</Label>
-            <Input
-              id="groupName"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              placeholder='Ex: "República Central"'
-            />
+            <Input id="groupName" value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder='Ex: "República Central"' />
           </div>
 
           <div className="space-y-2">
