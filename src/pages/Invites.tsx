@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Send, Copy, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Send, Copy } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().trim().email("Email inválido").max(255);
@@ -73,7 +73,11 @@ export default function Invites() {
   };
 
   const copyLink = (token: string) => {
-    const link = `${window.location.origin}/invite?token=${token}`;
+    const baseUrl =
+      (import.meta.env.VITE_APP_URL
+        ? import.meta.env.VITE_APP_URL.replace(/\/$/, "")
+        : undefined) || window.location.origin;
+    const link = `${baseUrl}/invite?token=${token}`;
     navigator.clipboard.writeText(link);
     toast({ title: "Link copiado!", description: "Envie para o morador." });
   };
