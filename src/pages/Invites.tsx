@@ -22,6 +22,8 @@ const statusMap: Record<string, { label: string; variant: "default" | "secondary
 
 const FALLBACK_PREVIEW_BASE = "https://preview--republi-k.lovable.app";
 
+const isLovableEditUrl = (url?: string) => !!url && url.includes("/projects/");
+
 export default function Invites() {
   const { user, membership } = useAuth();
   const queryClient = useQueryClient();
@@ -75,9 +77,11 @@ export default function Invites() {
   };
 
   const copyLink = (token: string) => {
+    const envUrl = import.meta.env.VITE_APP_URL?.replace(/\/$/, "");
     const baseUrl =
-      (import.meta.env.VITE_APP_URL ? import.meta.env.VITE_APP_URL.replace(/\/$/, "") : undefined) ??
-      FALLBACK_PREVIEW_BASE;
+      envUrl && !isLovableEditUrl(envUrl)
+        ? envUrl
+        : FALLBACK_PREVIEW_BASE;
     const link = `${baseUrl}/invite?token=${token}`;
     navigator.clipboard.writeText(link);
     toast({ title: "Link copiado!", description: "Envie para o morador." });
