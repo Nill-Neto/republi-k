@@ -1,14 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Receipt, TrendingUp, AlertTriangle, Download, Package } from "lucide-react";
+import { Users, Receipt, TrendingUp, AlertTriangle, Download, Package, DollarSign, Upload, Loader2 } from "lucide-react";
 import { format, subMonths, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 const CATEGORY_LABELS: Record<string, string> = {
   rent: "Aluguel", utilities: "Contas", groceries: "Mercado", cleaning: "Limpeza",
@@ -18,6 +24,57 @@ const COLORS = ["hsl(220,65%,18%)", "hsl(164,55%,36%)", "hsl(38,92%,50%)", "hsl(
 
 export default function Dashboard() {
   const { profile, membership, isAdmin, user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Payment State
+  const [paySplitOpen, setPaySplitOpen] = useState(false);
+  const [splitId, setSplitId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(<dyad-problem-report summary="1 problems">
+<problem file="src/pages/Dashboard.tsx" line="323" column="28" code="2304">Cannot find name 'Loader2'.</problem>
+</dyad-problem-report><think>**Addressing the TypeScript Error**
+
+I've pinpointed a TypeScript error within `src/pages/Dashboard.tsx`. It appears I'm utilizing `Loader2` without importing it. To remedy this, I'll incorporate `Loader2` into the imports from `lucide-react`, resolving the undefined component issue.
+
+
+</think>I will fix the missing `Loader2` import in `src/pages/Dashboard.tsx`.
+
+<dyad-write path="src/pages/Dashboard.tsx" description="Adding missing Loader2 import">
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Users, Receipt, TrendingUp, AlertTriangle, Download, Package, DollarSign, Upload, Loader2 } from "lucide-react";
+import { format, subMonths, startOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Link } from "react-router-dom";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  rent: "Aluguel", utilities: "Contas", groceries: "Mercado", cleaning: "Limpeza",
+  maintenance: "Manutenção", internet: "Internet", other: "Outros",
+};
+const COLORS = ["hsl(220,65%,18%)", "hsl(164,55%,36%)", "hsl(38,92%,50%)", "hsl(0,72%,51%)", "hsl(270,50%,50%)", "hsl(200,60%,40%)", "hsl(30,70%,50%)"];
+
+export default function Dashboard() {
+  const { profile, membership, isAdmin, user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Payment State
+  const [paySplitOpen, setPaySplitOpen] = useState(false);
+  const [splitId, setSplitId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const { data: memberCount } = useQuery({
     queryKey: ["member-count", membership?.group_id],
@@ -57,15 +114,16 @@ export default function Dashboard() {
     enabled: !!membership?.group_id && !!user?.id,
   });
 
-  const { data: pendingCount } = useQuery({
-    queryKey: ["pending-count", membership?.group_id, user?.id],
+  const { data: pendingSplits } = useQuery({
+    queryKey: ["my-pending-splits", membership?.group_id, user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("expense_splits")
-        .select("id, expenses:expense_id(group_id)")
+        .select("id, amount, status, expense_id, expenses:expense_id(title, group_id)")
         .eq("user_id", user!.id)
         .eq("status", "pending");
-      return (data ?? []).filter((s: any) => s.expenses?.group_id === membership!.group_id).length;
+      if (error) throw error;
+      return (data ?? []).filter((s: any) => s.expenses?.group_id === membership!.group_id);
     },
     enabled: !!membership?.group_id && !!user?.id,
   });
@@ -142,7 +200,50 @@ export default function Dashboard() {
     enabled: !!membership?.group_id,
   });
 
+  const handlePaySplit = async () => {
+    if (!splitId || !amount) {
+      toast({ title: "Erro", description: "Selecione uma despesa.", variant: "destructive" });
+      return;
+    }
+    if (!receiptFile) {
+      toast({ title: "Erro", description: "Comprovante é obrigatório.", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const ext = receiptFile.name.split(".").pop();
+      const path = `${user!.id}/${Date.now()}_split.${ext}`;
+      const { error: upErr } = await supabase.storage.from("receipts").upload(path, receiptFile);
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(path);
+
+      const { error } = await supabase.from("payments").insert({
+        group_id: membership!.group_id,
+        expense_split_id: splitId,
+        paid_by: user!.id,
+        amount: parseFloat(amount),
+        receipt_url: urlData.publicUrl,
+        status: "pending"
+      });
+      if (error) throw error;
+
+      toast({ title: "Pagamento enviado!", description: "Aguardando confirmação do admin." });
+      queryClient.invalidateQueries({ queryKey: ["my-pending-splits"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      setPaySplitOpen(false);
+      setSplitId("");
+      setAmount("");
+      setReceiptFile(null);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const balance = myBalance?.balance ?? 0;
+  const pendingCount = pendingSplits?.length ?? 0;
 
   const exportCSV = () => {
     if (!recentExpenses) return;
@@ -177,8 +278,13 @@ export default function Dashboard() {
       icon: TrendingUp,
       color: balance >= 0 ? "text-success" : "text-destructive",
       suffix: balance < 0 ? " (devendo)" : balance > 0 ? " (em dia)" : "",
+      action: balance < 0 || pendingCount > 0 ? (
+        <Button size="sm" variant="default" className="mt-2 h-7 gap-1 w-full" onClick={() => setPaySplitOpen(true)}>
+          <DollarSign className="h-3 w-3" /> Pagar
+        </Button>
+      ) : null
     },
-    { label: "Pendências", value: String(pendingCount ?? 0), icon: AlertTriangle, color: (pendingCount ?? 0) > 0 ? "text-warning" : "text-muted-foreground" },
+    { label: "Pendências", value: String(pendingCount), icon: AlertTriangle, color: pendingCount > 0 ? "text-warning" : "text-muted-foreground" },
   ];
 
   return (
@@ -201,6 +307,7 @@ export default function Dashboard() {
             <CardContent>
               <p className="text-2xl font-bold font-serif">{s.value}</p>
               {"suffix" in s && s.suffix && <p className={`text-xs ${s.color}`}>{s.suffix}</p>}
+              {"action" in s && s.action}
             </CardContent>
           </Card>
         ))}
@@ -216,6 +323,53 @@ export default function Dashboard() {
           </Card>
         </Link>
       )}
+
+      {/* Pay Split Dialog */}
+      <Dialog open={paySplitOpen} onOpenChange={setPaySplitOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Pagar Minha Parte</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Despesa Pendente</Label>
+              <Select 
+                value={splitId} 
+                onValueChange={(v) => {
+                  setSplitId(v);
+                  const s = pendingSplits?.find((ps: any) => ps.id === v);
+                  if (s) setAmount(String(s.amount));
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {pendingSplits?.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.expenses?.title} — R$ {Number(s.amount).toFixed(2)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Valor (R$)</Label>
+              <Input value={amount} disabled /> 
+            </div>
+
+            <div className="space-y-2">
+              <Label>Comprovante *</Label>
+              <Input type="file" accept="image/*,.pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} />
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPaySplitOpen(false)}>Cancelar</Button>
+              <Button onClick={handlePaySplit} disabled={saving || !splitId}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />} 
+                Enviar Pagamento
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">

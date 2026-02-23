@@ -36,14 +36,13 @@ export default function Expenses() {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("other");
   const [customCategory, setCustomCategory] = useState("");
-  const [expenseType, setExpenseType] = useState<"collective" | "individual">("individual");
+  const [expenseType, setExpenseType] = useState<"collective" | "individual">(isAdmin ? "collective" : "individual");
   const [dueDate, setDueDate] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
   // State for Payments
   const [payProviderOpen, setPayProviderOpen] = useState(false);
-  const [paySplitOpen, setPaySplitOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
@@ -190,43 +189,6 @@ export default function Expenses() {
     }
   };
 
-  // User pays their split
-  const handlePaySplit = async () => {
-    if (!receiptFile) {
-      toast({ title: "Erro", description: "Comprovante é obrigatório.", variant: "destructive" });
-      return;
-    }
-    const mySplit = selectedExpense.expense_splits.find((s: any) => s.user_id === user!.id);
-    if (!mySplit) return;
-
-    setSaving(true);
-    try {
-      const ext = receiptFile.name.split(".").pop();
-      const path = `${user!.id}/${Date.now()}_split.${ext}`;
-      const { error: upErr } = await supabase.storage.from("receipts").upload(path, receiptFile);
-      if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(path);
-
-      const { error } = await supabase.from("payments").insert({
-        group_id: membership!.group_id,
-        expense_split_id: mySplit.id,
-        paid_by: user!.id,
-        amount: mySplit.amount,
-        receipt_url: urlData.publicUrl,
-        status: "pending"
-      });
-      if (error) throw error;
-
-      toast({ title: "Pagamento enviado!", description: "Aguardando confirmação do admin." });
-      setPaySplitOpen(false);
-      setReceiptFile(null);
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   // --- Helpers ---
 
   const openEdit = (expense: any) => {
@@ -322,7 +284,7 @@ export default function Expenses() {
 
               <div className="space-y-2">
                 <Label>Título</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Conta de luz" maxLength={200} />
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Conta de luz - Janeiro" maxLength={200} />
               </div>
 
               <div className="space-y-2">
@@ -383,29 +345,6 @@ export default function Expenses() {
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* Pay Split Dialog (Resident) */}
-        <Dialog open={paySplitOpen} onOpenChange={setPaySplitOpen}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Pagar Minha Parte</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Enviar comprovante referente a <strong>{selectedExpense?.title}</strong>. 
-                Sua parte é <strong>R$ {selectedExpense?.expense_splits?.find((s:any) => s.user_id === user?.id)?.amount}</strong>.
-              </p>
-              <div className="space-y-2">
-                <Label>Comprovante *</Label>
-                <Input type="file" accept="image/*,.pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} />
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setPaySplitOpen(false)}>Cancelar</Button>
-                <Button onClick={handlePaySplit} disabled={saving}>
-                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Enviar Pagamento
-                </Button>
-              </DialogFooter>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       <Tabs defaultValue="all">
@@ -416,6 +355,11 @@ export default function Expenses() {
         </TabsList>
 
         <TabsContent value="all" className="space-y-3 mt-4">
+          {expenses?.length === 0 && (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">Nenhuma despesa registrada.</CardContent>
+            </Card>
+          )}
           {expenses?.map((e) => (
             <ExpenseCard 
               key={e.id} 
@@ -425,7 +369,6 @@ export default function Expenses() {
               onEdit={() => openEdit(e)} 
               onDelete={() => handleDelete(e.id)}
               onPayProvider={() => { setSelectedExpense(e); setReceiptFile(null); setPayProviderOpen(true); }}
-              onPaySplit={() => { setSelectedExpense(e); setReceiptFile(null); setPaySplitOpen(true); }}
             />
           ))}
         </TabsContent>
@@ -441,7 +384,6 @@ export default function Expenses() {
               onEdit={() => openEdit(s.expense)} 
               onDelete={() => handleDelete(s.expense.id)}
               onPayProvider={() => { setSelectedExpense(s.expense); setReceiptFile(null); setPayProviderOpen(true); }}
-              onPaySplit={() => { setSelectedExpense(s.expense); setReceiptFile(null); setPaySplitOpen(true); }}
             />
           ))}
         </TabsContent>
@@ -456,7 +398,6 @@ export default function Expenses() {
               onEdit={() => openEdit(e)} 
               onDelete={() => handleDelete(e.id)}
               onPayProvider={() => { setSelectedExpense(e); setReceiptFile(null); setPayProviderOpen(true); }}
-              onPaySplit={() => { setSelectedExpense(e); setReceiptFile(null); setPaySplitOpen(true); }}
             />
           ))}
         </TabsContent>
@@ -467,10 +408,10 @@ export default function Expenses() {
 
 function ExpenseCard({ 
   expense, userId, highlightSplit, isAdmin, 
-  onEdit, onDelete, onPayProvider, onPaySplit 
+  onEdit, onDelete, onPayProvider 
 }: { 
   expense: any; userId?: string; highlightSplit?: any; isAdmin: boolean;
-  onEdit: () => void; onDelete: () => void; onPayProvider: () => void; onPaySplit: () => void;
+  onEdit: () => void; onDelete: () => void; onPayProvider: () => void;
 }) {
   const mySplit = highlightSplit ?? expense.expense_splits?.find((s: any) => s.user_id === userId);
   const catLabel = CATEGORIES.find((c) => c.value === expense.category)?.label ?? expense.category;
@@ -479,7 +420,6 @@ function ExpenseCard({
   // Permissions
   const canEdit = isAdmin || (expense.created_by === userId && expense.expense_type === 'individual');
   const showPayProvider = isAdmin && expense.expense_type === 'collective' && !expense.paid_to_provider;
-  const showPaySplit = mySplit && mySplit.status === 'pending';
 
   return (
     <Card>
@@ -528,17 +468,12 @@ function ExpenseCard({
         </div>
 
         {/* Actions Bar */}
-        {(canEdit || showPayProvider || showPaySplit) && (
+        {(canEdit || showPayProvider) && (
           <div className="mt-4 pt-3 border-t flex items-center justify-between gap-2">
              <div className="flex gap-2">
                 {showPayProvider && (
                   <Button size="sm" variant="default" className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={onPayProvider}>
                     <DollarSign className="h-3 w-3" /> Pagar Conta
-                  </Button>
-                )}
-                {showPaySplit && (
-                  <Button size="sm" variant="default" className="h-8 gap-1" onClick={onPaySplit}>
-                    <DollarSign className="h-3 w-3" /> Pagar Minha Parte
                   </Button>
                 )}
              </div>
