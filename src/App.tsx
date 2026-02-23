@@ -26,6 +26,7 @@ import Bulletin from "./pages/Bulletin";
 import HouseRules from "./pages/HouseRules";
 import Polls from "./pages/Polls";
 import CreditCards from "./pages/CreditCards";
+import PersonalExpenses from "./pages/PersonalExpenses";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/polls" element={<Polls />} />
               <Route path="/audit-log" element={<AuditLog />} />
               <Route path="/personal/cards" element={<CreditCards />} />
+              <Route path="/personal/expenses" element={<PersonalExpenses />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

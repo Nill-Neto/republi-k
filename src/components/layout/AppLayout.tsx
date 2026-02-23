@@ -27,6 +27,7 @@ import {
   BookOpen,
   Vote,
   Wallet,
+  ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +50,10 @@ const adminItems = [
   { to: "/audit-log", icon: ScrollText, label: "Histórico" },
 ];
 
-const personalItems = [{ to: "/personal/cards", icon: Wallet, label: "Cartões pessoais" }];
+const personalItems = [
+  { to: "/personal/expenses", icon: ListChecks, label: "Minhas despesas" },
+  { to: "/personal/cards", icon: Wallet, label: "Cartões pessoais" },
+];
 
 export function AppLayout() {
   const { profile, membership, isAdmin, signOut } = useAuth();
@@ -138,6 +142,7 @@ export function AppLayout() {
             </Link>
           ))}
         </div>
+
         {personalItems.length > 0 && (
           <div className="border-t">
             <div className="container flex items-center gap-2 overflow-x-auto py-1.5">
