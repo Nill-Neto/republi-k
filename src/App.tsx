@@ -20,6 +20,7 @@ import GroupSettings from "./pages/GroupSettings";
 import AuditLog from "./pages/AuditLog";
 import Inventory from "./pages/Inventory";
 import ShoppingLists from "./pages/ShoppingLists";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/invites" element={<Invites />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/shopping" element={<ShoppingLists />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<GroupSettings />} />
               <Route path="/audit-log" element={<AuditLog />} />
             </Route>
