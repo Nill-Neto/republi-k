@@ -26,7 +26,6 @@ import Bulletin from "./pages/Bulletin";
 import HouseRules from "./pages/HouseRules";
 import Polls from "./pages/Polls";
 import CreditCards from "./pages/CreditCards";
-import PersonalExpenses from "./pages/PersonalExpenses";
 import PersonalDashboard from "./pages/PersonalDashboard";
 import Bills from "./pages/Bills";
 
@@ -67,7 +66,6 @@ const App = () => (
               <Route path="/audit-log" element={<AuditLog />} />
               <Route path="/personal/dashboard" element={<PersonalDashboard />} />
               <Route path="/personal/cards" element={<CreditCards />} />
-              <Route path="/personal/expenses" element={<PersonalExpenses />} />
               <Route path="/personal/bills" element={<Bills />} />
             </Route>
 

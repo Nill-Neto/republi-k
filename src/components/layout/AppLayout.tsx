@@ -67,7 +67,7 @@ const groups = [
     title: "Pessoal",
     items: [
       { to: "/personal/dashboard", icon: BarChart3, label: "Meu Dashboard" },
-      { to: "/personal/expenses", icon: ListChecks, label: "Minhas Despesas" },
+      { to: "/expenses", icon: ListChecks, label: "Minhas Despesas" },
       { to: "/personal/bills", icon: ScrollText, label: "Faturas" },
       { to: "/personal/cards", icon: Wallet, label: "Cartões" },
     ],
