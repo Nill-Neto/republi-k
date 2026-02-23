@@ -12,23 +12,40 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   LayoutDashboard,
+  User,
   Users,
   Settings,
   LogOut,
   UserPlus,
   ScrollText,
+  Receipt,
+  CreditCard,
+  RefreshCw,
+  Package,
+  ShoppingCart,
+  MessageSquare,
+  BookOpen,
+  Vote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/expenses", icon: Receipt, label: "Despesas" },
+  { to: "/payments", icon: CreditCard, label: "Pagamentos" },
+  { to: "/inventory", icon: Package, label: "Estoque" },
+  { to: "/shopping", icon: ShoppingCart, label: "Compras" },
   { to: "/members", icon: Users, label: "Moradores" },
-  { to: "/audit-log", icon: ScrollText, label: "Histórico" },
+  { to: "/bulletin", icon: MessageSquare, label: "Mural" },
+  { to: "/rules", icon: BookOpen, label: "Regras" },
+  { to: "/polls", icon: Vote, label: "Votações" },
 ];
 
 const adminItems = [
+  { to: "/recurring", icon: RefreshCw, label: "Recorrências" },
   { to: "/invites", icon: UserPlus, label: "Convites" },
-  { to: "/settings", icon: Settings, label: "Configurações" },
+  { to: "/settings", icon: Settings, label: "Config." },
+  { to: "/audit-log", icon: ScrollText, label: "Histórico" },
 ];
 
 export function AppLayout() {
@@ -84,6 +101,11 @@ export function AppLayout() {
                   )}
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />Meu Perfil
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={signOut} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair
@@ -94,15 +116,15 @@ export function AppLayout() {
         </div>
       </header>
 
-      {/* Bottom nav (mobile) / Sidebar-like nav in header (desktop) */}
+      {/* Desktop nav */}
       <nav className="border-b bg-card hidden md:block">
-        <div className="container flex gap-1">
+        <div className="container flex gap-1 overflow-x-auto">
           {allItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               className={cn(
-                "flex items-center gap-2 px-3 py-2.5 text-sm transition-colors border-b-2 -mb-px",
+                "flex items-center gap-2 px-3 py-2.5 text-sm transition-colors border-b-2 -mb-px whitespace-nowrap",
                 location.pathname === item.to
                   ? "border-primary text-foreground font-medium"
                   : "border-transparent text-muted-foreground hover:text-foreground"

@@ -55,6 +55,144 @@ export type Database = {
           },
         ]
       }
+      bulletin_posts: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          group_id: string
+          id: string
+          pinned: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          group_id: string
+          id?: string
+          pinned?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          group_id?: string
+          id?: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulletin_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_splits: {
+        Row: {
+          amount: number
+          created_at: string
+          expense_id: string
+          id: string
+          paid_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          expense_id: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          expense_id?: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_splits_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          expense_type: string
+          group_id: string
+          id: string
+          paid_to_provider: boolean
+          receipt_url: string | null
+          recurring_expense_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          expense_type?: string
+          group_id: string
+          id?: string
+          paid_to_provider?: boolean
+          receipt_url?: string | null
+          recurring_expense_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          expense_type?: string
+          group_id?: string
+          id?: string
+          paid_to_provider?: boolean
+          receipt_url?: string | null
+          recurring_expense_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           active: boolean
@@ -122,6 +260,97 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      house_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string
+          description: string | null
+          group_id: string
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by: string
+          description?: string | null
+          group_id: string
+          id?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          group_id?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_items: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          group_id: string
+          id: string
+          min_quantity: number
+          name: string
+          quantity: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by: string
+          group_id: string
+          id?: string
+          min_quantity?: number
+          name: string
+          quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          group_id?: string
+          id?: string
+          min_quantity?: number
+          name?: string
+          quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invites: {
         Row: {
@@ -208,6 +437,184 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          expense_split_id: string | null
+          group_id: string
+          id: string
+          notes: string | null
+          paid_by: string
+          receipt_url: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          expense_split_id?: string | null
+          group_id: string
+          id?: string
+          notes?: string | null
+          paid_by: string
+          receipt_url?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          expense_split_id?: string | null
+          group_id?: string
+          id?: string
+          notes?: string | null
+          paid_by?: string
+          receipt_url?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_expense_split_id_fkey"
+            columns: ["expense_split_id"]
+            isOneToOne: false
+            referencedRelation: "expense_splits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_options: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          poll_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          poll_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          poll_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          anonymous: boolean
+          closes_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          group_id: string
+          id: string
+          multiple_choice: boolean
+          question: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          anonymous?: boolean
+          closes_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          group_id: string
+          id?: string
+          multiple_choice?: boolean
+          question: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          anonymous?: boolean
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          group_id?: string
+          id?: string
+          multiple_choice?: boolean
+          question?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "polls_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_sensitive: {
         Row: {
           cpf: string
@@ -259,6 +666,153 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_expenses: {
+        Row: {
+          active: boolean
+          amount: number
+          category: string
+          created_at: string
+          created_by: string
+          day_of_month: number | null
+          description: string | null
+          frequency: string
+          group_id: string
+          id: string
+          last_generated_at: string | null
+          next_due_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          category?: string
+          created_at?: string
+          created_by: string
+          day_of_month?: number | null
+          description?: string | null
+          frequency?: string
+          group_id: string
+          id?: string
+          last_generated_at?: string | null
+          next_due_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string
+          day_of_month?: number | null
+          description?: string | null
+          frequency?: string
+          group_id?: string
+          id?: string
+          last_generated_at?: string | null
+          next_due_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_expenses_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopping_list_items: {
+        Row: {
+          created_at: string
+          id: string
+          list_id: string
+          name: string
+          purchased: boolean
+          purchased_at: string | null
+          purchased_by: string | null
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          list_id: string
+          name: string
+          purchased?: boolean
+          purchased_at?: string | null
+          purchased_by?: string | null
+          quantity?: number
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          list_id?: string
+          name?: string
+          purchased?: boolean
+          purchased_at?: string | null
+          purchased_by?: string | null
+          quantity?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "shopping_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopping_lists: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          group_id: string
+          id: string
+          list_type: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          group_id: string
+          id?: string
+          list_type?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          group_id?: string
+          id?: string
+          list_type?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_lists_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -297,6 +851,10 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { _token: string }; Returns: Json }
+      confirm_payment: {
+        Args: { _payment_id: string; _status?: string }
+        Returns: undefined
+      }
       create_audit_log: {
         Args: {
           _action: string
@@ -305,6 +863,21 @@ export type Database = {
           _entity_type: string
           _group_id: string
           _user_id: string
+        }
+        Returns: string
+      }
+      create_expense_with_splits: {
+        Args: {
+          _amount?: number
+          _category?: string
+          _description?: string
+          _due_date?: string
+          _expense_type?: string
+          _group_id: string
+          _receipt_url?: string
+          _recurring_expense_id?: string
+          _target_user_id?: string
+          _title: string
         }
         Returns: string
       }
@@ -326,6 +899,15 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      get_member_balances: {
+        Args: { _group_id: string }
+        Returns: {
+          balance: number
+          total_owed: number
+          total_paid: number
+          user_id: string
+        }[]
       }
       get_user_group_ids: { Args: { _user_id: string }; Returns: string[] }
       has_role_in_group: {
