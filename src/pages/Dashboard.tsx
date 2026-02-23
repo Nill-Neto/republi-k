@@ -31,49 +31,6 @@ export default function Dashboard() {
   const [splitId, setSplitId] = useState("");
   const [amount, setAmount] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [saving, setSaving] = useState(<dyad-problem-report summary="1 problems">
-<problem file="src/pages/Dashboard.tsx" line="323" column="28" code="2304">Cannot find name 'Loader2'.</problem>
-</dyad-problem-report><think>**Addressing the TypeScript Error**
-
-I've pinpointed a TypeScript error within `src/pages/Dashboard.tsx`. It appears I'm utilizing `Loader2` without importing it. To remedy this, I'll incorporate `Loader2` into the imports from `lucide-react`, resolving the undefined component issue.
-
-
-</think>I will fix the missing `Loader2` import in `src/pages/Dashboard.tsx`.
-
-<dyad-write path="src/pages/Dashboard.tsx" description="Adding missing Loader2 import">
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Users, Receipt, TrendingUp, AlertTriangle, Download, Package, DollarSign, Upload, Loader2 } from "lucide-react";
-import { format, subMonths, startOfMonth } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Link } from "react-router-dom";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  rent: "Aluguel", utilities: "Contas", groceries: "Mercado", cleaning: "Limpeza",
-  maintenance: "Manutenção", internet: "Internet", other: "Outros",
-};
-const COLORS = ["hsl(220,65%,18%)", "hsl(164,55%,36%)", "hsl(38,92%,50%)", "hsl(0,72%,51%)", "hsl(270,50%,50%)", "hsl(200,60%,40%)", "hsl(30,70%,50%)"];
-
-export default function Dashboard() {
-  const { profile, membership, isAdmin, user } = useAuth();
-  const queryClient = useQueryClient();
-
-  // Payment State
-  const [paySplitOpen, setPaySplitOpen] = useState(false);
-  const [splitId, setSplitId] = useState("");
-  const [amount, setAmount] = useState("");
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   const { data: memberCount } = useQuery({
