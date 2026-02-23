@@ -55,6 +55,47 @@ export type Database = {
           },
         ]
       }
+      bulletin_posts: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          group_id: string
+          id: string
+          pinned: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          group_id: string
+          id?: string
+          pinned?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          group_id?: string
+          id?: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulletin_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_splits: {
         Row: {
           amount: number
@@ -219,6 +260,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      house_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string
+          description: string | null
+          group_id: string
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by: string
+          description?: string | null
+          group_id: string
+          id?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          group_id?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_rules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inventory_items: {
         Row: {
@@ -402,6 +487,127 @@ export type Database = {
           },
           {
             foreignKeyName: "payments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_options: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          poll_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          poll_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          poll_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          anonymous: boolean
+          closes_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          group_id: string
+          id: string
+          multiple_choice: boolean
+          question: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          anonymous?: boolean
+          closes_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          group_id: string
+          id?: string
+          multiple_choice?: boolean
+          question: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          anonymous?: boolean
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          group_id?: string
+          id?: string
+          multiple_choice?: boolean
+          question?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "polls_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"

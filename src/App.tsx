@@ -22,6 +22,9 @@ import Inventory from "./pages/Inventory";
 import ShoppingLists from "./pages/ShoppingLists";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Bulletin from "./pages/Bulletin";
+import HouseRules from "./pages/HouseRules";
+import Polls from "./pages/Polls";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +51,9 @@ const App = () => (
               <Route path="/shopping" element={<ShoppingLists />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<GroupSettings />} />
+              <Route path="/bulletin" element={<Bulletin />} />
+              <Route path="/rules" element={<HouseRules />} />
+              <Route path="/polls" element={<Polls />} />
               <Route path="/audit-log" element={<AuditLog />} />
             </Route>
 
