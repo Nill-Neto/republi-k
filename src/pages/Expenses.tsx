@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,12 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Plus, Calendar, Users, User, Save, Upload, Edit, Trash2, ExternalLink, CheckCircle2, DollarSign, CreditCard, Layers } from "lucide-react";
+import { Loader2, Plus, Calendar, Users, User, Save, Edit, CreditCard } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 const CATEGORIES = [
   { value: "rent", label: "Aluguel" },
@@ -54,11 +53,6 @@ export default function Expenses() {
 
   const [saving, setSaving] = useState(false);
 
-  // State for Payments (Pay Provider)
-  const [payProviderOpen, setPayProviderOpen] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<any>(null);
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
-
   useEffect(() => {
     if (!editingId) {
       setExpenseType(isAdmin ? "collective" : "individual");
@@ -94,7 +88,8 @@ export default function Expenses() {
     enabled: !!user,
   });
 
-  const collectiveExpenses = (expenses ?? []).filter((e) => e.expense_type === "collective");
+  const myExpenses = (expenses ?? []).filter(e => e.expense_type === 'individual' && e.created_by === user?.id);
+  const collectiveExpenses = (expenses ?? []).filter(e => e.expense_type === 'collective');
 
   const handleSave = async () => {
     if (!title.trim() || !amount || parseFloat(amount) <= 0) {
@@ -316,11 +311,25 @@ export default function Expenses() {
           <TabsTrigger value="collective">Coletivas</TabsTrigger>
         </TabsList>
         <TabsContent value="all" className="space-y-3 mt-4">
+          {(expenses ?? []).length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa encontrada.</p>}
           {(expenses ?? []).map((e) => (
             <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => openEdit(e)} />
           ))}
         </TabsContent>
-        {/* ... rest of tabs ... */}
+        
+        <TabsContent value="mine" className="space-y-3 mt-4">
+          {myExpenses.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa individual encontrada.</p>}
+          {myExpenses.map((e) => (
+            <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => openEdit(e)} />
+          ))}
+        </TabsContent>
+
+        <TabsContent value="collective" className="space-y-3 mt-4">
+          {collectiveExpenses.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa coletiva encontrada.</p>}
+          {collectiveExpenses.map((e) => (
+            <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => openEdit(e)} />
+          ))}
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -339,7 +348,7 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit }: any) {
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <p className="font-medium">{expense.title}</p>
               <Badge variant="outline" className="text-xs">{catLabel}</Badge>
-              <Badge variant={expense.expense_type === "collective" ? "default" : "secondary"} className="text-xs">{expense.expense_type}</Badge>
+              <Badge variant={expense.expense_type === "collective" ? "default" : "secondary"} className="text-xs">{expense.expense_type === "collective" ? "Coletiva" : "Individual"}</Badge>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-2">
                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {format(new Date(expense.purchase_date || expense.created_at), "dd/MM/yyyy")}</span>
@@ -348,7 +357,7 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit }: any) {
           </div>
           <div className="text-right">
             <p className="text-lg font-bold font-serif">R$ {Number(expense.amount).toFixed(2)}</p>
-            {mySplit && <Badge variant="secondary" className="text-[10px]">Sua parte: R$ {Number(mySplit.amount).toFixed(2)}</Badge>}
+            {mySplit && expense.expense_type === "collective" && <Badge variant="secondary" className="text-[10px]">Sua parte: R$ {Number(mySplit.amount).toFixed(2)}</Badge>}
           </div>
           {(isAdmin || (expense.created_by === userId && expense.expense_type === "individual")) && (
             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit}><Edit className="h-4 w-4" /></Button>
