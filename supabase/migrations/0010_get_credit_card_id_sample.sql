@@ -1,0 +1,1 @@
+select id from public.credit_cards limit 1;

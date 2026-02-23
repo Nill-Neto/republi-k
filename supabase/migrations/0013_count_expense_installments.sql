@@ -1,0 +1,1 @@
+select count(*) from public.expense_installments;

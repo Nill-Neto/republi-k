@@ -1,0 +1,1 @@
+select id, user_id, expense_id, amount, installment_number, bill_month, bill_year from public.expense_installments order by created_at desc limit 20;

@@ -1,0 +1,1 @@
+select proname, oidvectortypes(proargtypes) as args from pg_proc where pronamespace = 'public'::regnamespace and proname = 'create_expense_with_splits';

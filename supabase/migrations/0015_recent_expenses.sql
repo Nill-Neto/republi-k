@@ -1,0 +1,1 @@
+select id, created_by, payment_method, credit_card_id, installments, purchase_date, amount from public.expenses order by created_at desc limit 10;

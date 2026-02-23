@@ -1,0 +1,1 @@
+select pg_get_functiondef('public.create_expense_with_splits(uuid,text,text,numeric,text,text,date,text,uuid,uuid,text,uuid,integer,date)'::regprocedure);

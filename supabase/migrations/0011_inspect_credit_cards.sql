@@ -1,0 +1,1 @@
+select id, label, closing_day, due_day from public.credit_cards limit 5;

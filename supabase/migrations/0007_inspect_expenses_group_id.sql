@@ -1,0 +1,1 @@
+select group_id from public.expenses limit 5;
