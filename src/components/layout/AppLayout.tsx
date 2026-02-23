@@ -23,6 +23,9 @@ import {
   RefreshCw,
   Package,
   ShoppingCart,
+  MessageSquare,
+  BookOpen,
+  Vote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +36,9 @@ const navItems = [
   { to: "/inventory", icon: Package, label: "Estoque" },
   { to: "/shopping", icon: ShoppingCart, label: "Compras" },
   { to: "/members", icon: Users, label: "Moradores" },
+  { to: "/bulletin", icon: MessageSquare, label: "Mural" },
+  { to: "/rules", icon: BookOpen, label: "Regras" },
+  { to: "/polls", icon: Vote, label: "Votações" },
 ];
 
 const adminItems = [
