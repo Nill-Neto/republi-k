@@ -97,14 +97,30 @@ type UpdatedExpensesTable = Omit<Database["public"]["Tables"]["expenses"], "Row"
   };
 };
 
+type UpdatedGroupsTable = Omit<Database["public"]["Tables"]["groups"], "Row" | "Insert" | "Update"> & {
+  Row: Database["public"]["Tables"]["groups"]["Row"] & {
+    closing_day: number;
+    due_day: number;
+  };
+  Insert: Database["public"]["Tables"]["groups"]["Insert"] & {
+    closing_day?: number;
+    due_day?: number;
+  };
+  Update: Database["public"]["Tables"]["groups"]["Update"] & {
+    closing_day?: number;
+    due_day?: number;
+  };
+};
+
 type PublicSchema = Database["public"];
 
 export type ExtendedDatabase = Omit<Database, "public"> & {
   public: Omit<PublicSchema, "Tables"> & {
-    Tables: Omit<PublicSchema["Tables"], "expenses"> & {
+    Tables: Omit<PublicSchema["Tables"], "expenses" | "groups"> & {
       credit_cards: CreditCardTable;
       expenses: UpdatedExpensesTable;
       expense_installments: ExpenseInstallmentsTable;
+      groups: UpdatedGroupsTable;
     };
   };
 };

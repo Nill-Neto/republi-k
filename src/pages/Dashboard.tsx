@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Receipt, TrendingUp, Package, DollarSign, Loader2, ListChecks, User, Calendar, CreditCard, Plus } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth } from "date-fns";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -39,18 +39,41 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
 
   // --- Group Queries ---
-  const { data: monthExpenses } = useQuery({
-    queryKey: ["month-expenses", membership?.group_id],
+  const { data: groupSettings } = useQuery({
+    queryKey: ["group-settings-dashboard", membership?.group_id],
     queryFn: async () => {
-      const startOfM = startOfMonth(now).toISOString();
+      const { data } = await supabase.from("groups").select("closing_day, due_day").eq("id", membership!.group_id).single();
+      return data;
+    },
+    enabled: !!membership?.group_id
+  });
+
+  const { data: monthExpenses } = useQuery({
+    queryKey: ["month-expenses", membership?.group_id, groupSettings?.closing_day],
+    queryFn: async () => {
+      const closingDay = groupSettings?.closing_day || 1;
+      const today = new Date();
+      let startDateStr;
+
+      // Logic: If today >= closing day, we are in the cycle that started on closing day of THIS month.
+      // If today < closing day, we are in the cycle that started on closing day of LAST month.
+      if (today.getDate() >= closingDay) {
+        const d = new Date(today.getFullYear(), today.getMonth(), closingDay);
+        startDateStr = d.toISOString().split('T')[0];
+      } else {
+        const d = new Date(today.getFullYear(), today.getMonth() - 1, closingDay);
+        startDateStr = d.toISOString().split('T')[0];
+      }
+
       const { data } = await supabase
         .from("expenses")
         .select("amount")
         .eq("group_id", membership!.group_id)
-        .gte("created_at", startOfM);
+        .gte("created_at", startDateStr); // Ideally use purchase_date if available, but created_at is safer fallback
+      
       return (data ?? []).reduce((sum, e) => sum + Number(e.amount), 0);
     },
-    enabled: !!membership?.group_id,
+    enabled: !!membership?.group_id
   });
 
   const { data: pendingSplits } = useQuery({
@@ -80,13 +103,11 @@ export default function Dashboard() {
   });
 
   // 2. Fetch "Current Open Bill"
-  // Needs to sum installments from "This Month" or "Next Month" depending on closing day
   const { data: currentBill } = useQuery({
     queryKey: ["personal-bill-summary", user?.id, currentMonth, currentYear, cards],
     queryFn: async () => {
       if (cards.length === 0) return 0;
 
-      // We fetch a range (Current and Next Month) to cover both cases
       let nextMonth = currentMonth + 1;
       let nextYear = currentYear;
       if (nextMonth > 12) { nextMonth = 1; nextYear++; }
@@ -104,7 +125,6 @@ export default function Dashboard() {
         const card = cards.find((c: any) => c.id === item.expenses?.credit_card_id);
         if (!card) return;
 
-        // Determine target "Open Bill" for this card
         const today = new Date();
         let targetM = today.getMonth() + 1;
         let targetY = today.getFullYear();
@@ -223,7 +243,10 @@ export default function Dashboard() {
         {/* Collective Debt */}
         <Card className="border-destructive/20 bg-destructive/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-destructive font-medium">Rateio Pendente (Casa)</CardDescription>
+            <div>
+              <CardDescription className="text-destructive font-medium">Rateio Pendente (Casa)</CardDescription>
+              {groupSettings?.due_day && <p className="text-[10px] text-destructive/80 mt-1">Vence dia {groupSettings.due_day}</p>}
+            </div>
             <TrendingUp className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
@@ -267,12 +290,14 @@ export default function Dashboard() {
         {/* Group Spend */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription>Gastos da República (Mês)</CardDescription>
+            <CardDescription>Gastos da República</CardDescription>
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold font-serif">R$ {(monthExpenses ?? 0).toFixed(2)}</p>
-            <p className="text-[10px] uppercase tracking-wider mt-2 text-muted-foreground">Total Coletivo</p>
+            <p className="text-[10px] uppercase tracking-wider mt-2 text-muted-foreground">
+              Competência Atual (Fecha dia {groupSettings?.closing_day || 1})
+            </p>
           </CardContent>
         </Card>
       </div>

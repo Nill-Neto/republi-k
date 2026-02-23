@@ -31,12 +31,16 @@ export default function GroupSettings() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [splittingRule, setSplittingRule] = useState<string>("equal");
+  const [closingDay, setClosingDay] = useState<string>("1");
+  const [dueDay, setDueDay] = useState<string>("10");
 
   useEffect(() => {
     if (group) {
       setName(group.name);
       setDescription(group.description ?? "");
       setSplittingRule(group.splitting_rule);
+      setClosingDay(String(group.closing_day || 1));
+      setDueDay(String(group.due_day || 10));
     }
   }, [group]);
 
@@ -48,6 +52,8 @@ export default function GroupSettings() {
           name: name.trim(),
           description: description.trim() || null,
           splitting_rule: splittingRule as any,
+          closing_day: parseInt(closingDay),
+          due_day: parseInt(dueDay),
         })
         .eq("id", membership!.group_id);
       if (error) throw error;
@@ -102,9 +108,39 @@ export default function GroupSettings() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => updateGroup.mutate()} disabled={updateGroup.isPending}>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Dia de Fechamento</Label>
+              <Input 
+                type="number" 
+                min="1" 
+                max="31" 
+                value={closingDay} 
+                onChange={(e) => setClosingDay(e.target.value)} 
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Lançamentos após este dia entram na competência do mês seguinte.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Dia de Vencimento</Label>
+              <Input 
+                type="number" 
+                min="1" 
+                max="31" 
+                value={dueDay} 
+                onChange={(e) => setDueDay(e.target.value)} 
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Data limite sugerida para os moradores pagarem o rateio.
+              </p>
+            </div>
+          </div>
+
+          <Button onClick={() => updateGroup.mutate()} disabled={updateGroup.isPending} className="w-full">
             {updateGroup.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            Salvar
+            Salvar Alterações
           </Button>
         </CardContent>
       </Card>
