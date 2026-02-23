@@ -12,6 +12,9 @@ import Onboarding from "./pages/Onboarding";
 import AcceptInvite from "./pages/AcceptInvite";
 import Dashboard from "./pages/Dashboard";
 import Members from "./pages/Members";
+import Expenses from "./pages/Expenses";
+import Payments from "./pages/Payments";
+import RecurringExpenses from "./pages/RecurringExpenses";
 import Invites from "./pages/Invites";
 import GroupSettings from "./pages/GroupSettings";
 import AuditLog from "./pages/AuditLog";
@@ -33,6 +36,9 @@ const App = () => (
 
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/expenses" element={<Expenses />} />
+              <Route path="/payments" element={<Payments />} />
+              <Route path="/recurring" element={<RecurringExpenses />} />
               <Route path="/members" element={<Members />} />
               <Route path="/invites" element={<Invites />} />
               <Route path="/settings" element={<GroupSettings />} />

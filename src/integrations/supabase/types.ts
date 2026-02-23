@@ -55,6 +55,103 @@ export type Database = {
           },
         ]
       }
+      expense_splits: {
+        Row: {
+          amount: number
+          created_at: string
+          expense_id: string
+          id: string
+          paid_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          expense_id: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          expense_id?: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_splits_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          expense_type: string
+          group_id: string
+          id: string
+          paid_to_provider: boolean
+          receipt_url: string | null
+          recurring_expense_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          expense_type?: string
+          group_id: string
+          id?: string
+          paid_to_provider?: boolean
+          receipt_url?: string | null
+          recurring_expense_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          expense_type?: string
+          group_id?: string
+          id?: string
+          paid_to_provider?: boolean
+          receipt_url?: string | null
+          recurring_expense_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           active: boolean
@@ -208,6 +305,63 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          expense_split_id: string | null
+          group_id: string
+          id: string
+          notes: string | null
+          paid_by: string
+          receipt_url: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          expense_split_id?: string | null
+          group_id: string
+          id?: string
+          notes?: string | null
+          paid_by: string
+          receipt_url?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          expense_split_id?: string | null
+          group_id?: string
+          id?: string
+          notes?: string | null
+          paid_by?: string
+          receipt_url?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_expense_split_id_fkey"
+            columns: ["expense_split_id"]
+            isOneToOne: false
+            referencedRelation: "expense_splits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_sensitive: {
         Row: {
           cpf: string
@@ -259,6 +413,65 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_expenses: {
+        Row: {
+          active: boolean
+          amount: number
+          category: string
+          created_at: string
+          created_by: string
+          day_of_month: number | null
+          description: string | null
+          frequency: string
+          group_id: string
+          id: string
+          last_generated_at: string | null
+          next_due_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          category?: string
+          created_at?: string
+          created_by: string
+          day_of_month?: number | null
+          description?: string | null
+          frequency?: string
+          group_id: string
+          id?: string
+          last_generated_at?: string | null
+          next_due_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string
+          day_of_month?: number | null
+          description?: string | null
+          frequency?: string
+          group_id?: string
+          id?: string
+          last_generated_at?: string | null
+          next_due_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_expenses_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -297,6 +510,10 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { _token: string }; Returns: Json }
+      confirm_payment: {
+        Args: { _payment_id: string; _status?: string }
+        Returns: undefined
+      }
       create_audit_log: {
         Args: {
           _action: string
@@ -305,6 +522,21 @@ export type Database = {
           _entity_type: string
           _group_id: string
           _user_id: string
+        }
+        Returns: string
+      }
+      create_expense_with_splits: {
+        Args: {
+          _amount?: number
+          _category?: string
+          _description?: string
+          _due_date?: string
+          _expense_type?: string
+          _group_id: string
+          _receipt_url?: string
+          _recurring_expense_id?: string
+          _target_user_id?: string
+          _title: string
         }
         Returns: string
       }
@@ -326,6 +558,15 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      get_member_balances: {
+        Args: { _group_id: string }
+        Returns: {
+          balance: number
+          total_owed: number
+          total_paid: number
+          user_id: string
+        }[]
       }
       get_user_group_ids: { Args: { _user_id: string }; Returns: string[] }
       has_role_in_group: {
