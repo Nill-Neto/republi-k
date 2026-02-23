@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Plus, Calendar, Users, User, Upload } from "lucide-react";
+import { Loader2, Plus, Calendar, Users, User, Save } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -32,15 +32,21 @@ export default function Expenses() {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("other");
+  const [customCategory, setCustomCategory] = useState("");
   const [expenseType, setExpenseType] = useState<"collective" | "individual">(isAdmin ? "collective" : "individual");
   const [dueDate, setDueDate] = useState("");
   const [description, setDescription] = useState("");
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setExpenseType(isAdmin ? "collective" : "individual");
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (category !== "other") {
+      setCustomCategory("");
+    }
+  }, [category]);
 
   const { data: expenses, isLoading } = useQuery({
     queryKey: ["expenses", membership?.group_id],
@@ -76,27 +82,24 @@ export default function Expenses() {
       return;
     }
 
+    if (category === "other" && !customCategory.trim()) {
+      toast({ title: "Erro", description: "Informe o nome da categoria.", variant: "destructive" });
+      return;
+    }
+
+    const categoryToSend = category === "other" ? customCategory.trim() : category;
+
     setSaving(true);
     try {
-      let receiptUrl: string | null = null;
-      if (receiptFile && user) {
-        const ext = receiptFile.name.split(".").pop();
-        const path = `${user.id}/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("receipts").upload(path, receiptFile);
-        if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(path);
-        receiptUrl = urlData.publicUrl;
-      }
-
       const { error } = await supabase.rpc("create_expense_with_splits", {
         _group_id: membership!.group_id,
         _title: title.trim(),
         _description: description.trim() || null,
         _amount: parseFloat(amount),
-        _category: category,
+        _category: categoryToSend,
         _expense_type: expenseType,
         _due_date: dueDate || null,
-        _receipt_url: receiptUrl,
+        _receipt_url: null,
         _target_user_id: targetUserId,
       });
       if (error) throw error;
@@ -117,10 +120,10 @@ export default function Expenses() {
     setTitle("");
     setAmount("");
     setCategory("other");
+    setCustomCategory("");
     setExpenseType(isAdmin ? "collective" : "individual");
     setDueDate("");
     setDescription("");
-    setReceiptFile(null);
   };
 
   const mySplits =
@@ -214,6 +217,14 @@ export default function Expenses() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {category === "other" && (
+                    <Input
+                      className="mt-2"
+                      placeholder="Nome da categoria"
+                      value={customCategory}
+                      onChange={(e) => setCustomCategory(e.target.value)}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -222,13 +233,8 @@ export default function Expenses() {
                 <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
               </div>
 
-              <div className="space-y-2">
-                <Label>Comprovante (opcional)</Label>
-                <Input type="file" accept="image/*,.pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} />
-              </div>
-
               <Button onClick={handleCreate} disabled={saving} className="w-full">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                 Salvar despesa
               </Button>
             </div>
