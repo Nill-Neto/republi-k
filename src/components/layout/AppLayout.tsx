@@ -20,6 +20,8 @@ import {
   Receipt,
   CreditCard,
   RefreshCw,
+  Package,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +29,8 @@ const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/expenses", icon: Receipt, label: "Despesas" },
   { to: "/payments", icon: CreditCard, label: "Pagamentos" },
+  { to: "/inventory", icon: Package, label: "Estoque" },
+  { to: "/shopping", icon: ShoppingCart, label: "Compras" },
   { to: "/members", icon: Users, label: "Moradores" },
 ];
 
