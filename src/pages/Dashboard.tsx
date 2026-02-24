@@ -133,7 +133,7 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
-  // 5. Admin Data (Filtered for Collective Only)
+  // 5. Admin Data
   const { data: adminData } = useQuery({
     queryKey: ["admin-dashboard-data", membership?.group_id],
     queryFn: async () => {
@@ -141,13 +141,8 @@ export default function Dashboard() {
 
       const [membersRes, balancesRes, pendingPaymentsRes, rolesRes] = await Promise.all([
         supabase.from("group_members").select("user_id, active").eq("group_id", membership.group_id).eq("active", true),
-        // Use the new RPC that filters for expense_type = 'collective'
-        supabase.rpc("get_collective_balances" as any, { _group_id: membership.group_id }),
-        // Fetch all pending payments to filter them in JS
-        supabase.from("payments")
-          .select("id, expense_split_id, expense_splits(expense_id, expenses(expense_type))")
-          .eq("group_id", membership.group_id)
-          .eq("status", "pending"),
+        supabase.rpc("get_member_balances", { _group_id: membership.group_id }),
+        supabase.from("payments").select("id", { count: 'exact' }).eq("group_id", membership.group_id).eq("status", "pending"),
         supabase.from("user_roles").select("user_id, role").eq("group_id", membership.group_id)
       ]);
 
@@ -160,18 +155,10 @@ export default function Dashboard() {
         role: rolesRes.data?.find(r => r.user_id === m.user_id)?.role ?? 'morador'
       })) ?? [];
 
-      // Filter payments:
-      // 1. If expense_split_id is null, it's a Rateio payment (Collective).
-      // 2. If it has a split, check if the related expense is 'collective'.
-      const collectivePayments = (pendingPaymentsRes.data ?? []).filter((p: any) => {
-        if (!p.expense_split_id) return true; // Direct/Rateio payment
-        return p.expense_splits?.expenses?.expense_type === 'collective';
-      });
-
       return {
         members,
         balances: balancesRes.data ?? [],
-        pendingPaymentsCount: collectivePayments.length
+        pendingPaymentsCount: pendingPaymentsRes.count ?? 0
       };
     },
     enabled: !!membership?.group_id && isAdmin
@@ -348,7 +335,7 @@ export default function Dashboard() {
 
       {/* Main Tabs */}
       <Tabs defaultValue={isAdmin ? "admin" : "republic"} className="space-y-6">
-        <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6 overflow-x-auto">
+        <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6">
           {isAdmin && (
             <TabsTrigger value="admin" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
               <Shield className="h-4 w-4 mr-2" /> Administração
