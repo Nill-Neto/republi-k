@@ -18,6 +18,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   LayoutDashboard,
   User,
   Users,
@@ -40,7 +45,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-const navGroups = [
+// Grupos principais da Sidebar
+const mainNavGroups = [
   {
     title: "Moradia",
     items: [
@@ -58,15 +64,14 @@ const navGroups = [
       { to: "/personal/cards", icon: Wallet, label: "Meus Cartões" },
     ],
   },
-  {
-    title: "Convivência",
-    items: [
-      { to: "/bulletin", icon: MessageSquare, label: "Mural" },
-      { to: "/rules", icon: BookOpen, label: "Regras" },
-      { to: "/polls", icon: Vote, label: "Votações" },
-      { to: "/members", icon: Users, label: "Moradores" },
-    ],
-  },
+];
+
+// Itens de Convivência (Agora no Header)
+const convenienceItems = [
+  { to: "/bulletin", icon: MessageSquare, label: "Mural" },
+  { to: "/rules", icon: BookOpen, label: "Regras" },
+  { to: "/polls", icon: Vote, label: "Votações" },
+  { to: "/members", icon: Users, label: "Moradores" },
 ];
 
 const adminGroup = {
@@ -83,8 +88,7 @@ export function AppLayout() {
   const { profile, membership, isAdmin, signOut } = useAuth();
   const location = useLocation();
 
-  const groups = isAdmin ? [...navGroups, adminGroup] : navGroups;
-  const convenienceItems = navGroups.find((group) => group.title === "Convivência")?.items ?? [];
+  const sidebarGroups = isAdmin ? [...mainNavGroups, adminGroup] : mainNavGroups;
 
   const initials = (profile?.full_name || "U")
     .split(" ")
@@ -106,9 +110,14 @@ export function AppLayout() {
 
       <div className="flex-1 overflow-auto py-4 px-3">
         <nav className="space-y-6">
-          {groups.map((group) => (
+          {sidebarGroups.map((group) => (
             <CollapsibleNavGroup key={group.title} title={group.title} items={group.items} location={location} />
           ))}
+
+          {/* Convivência - Visível apenas no Mobile dentro da Sidebar (Sheet) */}
+          <div className="md:hidden">
+            <CollapsibleNavGroup title="Convivência" items={convenienceItems} location={location} />
+          </div>
         </nav>
       </div>
 
@@ -158,25 +167,34 @@ export function AppLayout() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            {convenienceItems.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="hidden gap-2 lg:inline-flex">
-                    <MessageSquare className="h-4 w-4" /> Convivência
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Convivência</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {convenienceItems.map((item) => (
-                    <DropdownMenuItem key={item.to} asChild>
-                      <Link to={item.to}>{item.label}</Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+          <div className="flex items-center gap-1">
+            {/* Ícones de Convivência no Header (Apenas Desktop) */}
+            <div className="hidden md:flex items-center gap-1 mr-2 border-r pr-2">
+              {convenienceItems.map((item) => {
+                const isActive = location.pathname === item.to;
+                return (
+                  <Tooltip key={item.to}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={isActive ? "secondary" : "ghost"}
+                        size="icon"
+                        className={cn("h-9 w-9", isActive && "text-primary")}
+                        asChild
+                      >
+                        <Link to={item.to}>
+                          <item.icon className="h-4 w-4" />
+                          <span className="sr-only">{item.label}</span>
+                        </Link>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{item.label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+
             <NotificationBell />
             <UserMenu profile={profile} signOut={signOut} />
           </div>
@@ -199,7 +217,7 @@ function CollapsibleNavGroup({
   items: { to: string; icon: any; label: string }[];
   location: any;
 }) {
-  const [isOpen, setIsOpen] = useState(title === "Moradia");
+  const [isOpen, setIsOpen] = useState(true); // Default open for better UX
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-1">
@@ -244,7 +262,7 @@ function UserMenu({ profile, signOut }: any) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full">
+        <Button variant="ghost" size="icon" className="rounded-full ml-1">
           <User className="h-5 w-5" />
           <span className="sr-only">Menu do usuário</span>
         </Button>
