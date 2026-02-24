@@ -84,6 +84,7 @@ export function AppLayout() {
   const location = useLocation();
 
   const groups = isAdmin ? [...navGroups, adminGroup] : navGroups;
+  const convenienceItems = navGroups.find((group) => group.title === "Convivência")?.items ?? [];
 
   const initials = (profile?.full_name || "U")
     .split(" ")
@@ -149,7 +150,7 @@ export function AppLayout() {
           <div className="flex-1">
             {membership && (
               <div className="flex items-center gap-2">
-                <span className="hidden text-sm font-medium text-muted-foreground sm:inline-block">
+                <span className="hidden text-sm font-medium text-muted-foreground/80 sm:inline-block">
                   Moradia:
                 </span>
                 <span className="text-sm font-semibold">{membership.group_name}</span>
@@ -158,6 +159,24 @@ export function AppLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            {convenienceItems.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="hidden gap-2 lg:inline-flex">
+                    <MessageSquare className="h-4 w-4" /> Convivência
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Convivência</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {convenienceItems.map((item) => (
+                    <DropdownMenuItem key={item.to} asChild>
+                      <Link to={item.to}>{item.label}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <NotificationBell />
             <UserMenu profile={profile} signOut={signOut} />
           </div>
