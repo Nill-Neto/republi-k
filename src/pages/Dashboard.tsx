@@ -133,16 +133,16 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
-  // 5. Admin Data (UPDATED to use v2 function)
+  // 5. Admin Data
   const { data: adminData } = useQuery({
     queryKey: ["admin-dashboard-data", membership?.group_id],
     queryFn: async () => {
       if (!isAdmin || !membership?.group_id) return null;
 
+      // Note: get_member_balances should now be updated to filter only collective expenses
       const [membersRes, balancesRes, pendingPaymentsRes, rolesRes] = await Promise.all([
         supabase.from("group_members").select("user_id, active").eq("group_id", membership.group_id).eq("active", true),
-        // Use the new v2 function here
-        supabase.rpc("get_group_balances_v2" as any, { _group_id: membership.group_id }),
+        supabase.rpc("get_member_balances", { _group_id: membership.group_id }),
         supabase.from("payments")
           .select("id, expense_split_id, expense_splits(expenses(expense_type))")
           .eq("group_id", membership.group_id)
@@ -159,8 +159,10 @@ export default function Dashboard() {
         role: rolesRes.data?.find(r => r.user_id === m.user_id)?.role ?? 'morador'
       })) ?? [];
 
+      // Filter pending payments to only count Collective ones
+      // Logic: If expense_split_id is null (generic rateio payment) OR related expense is 'collective'
       const pendingCollectiveCount = (pendingPaymentsRes.data || []).filter((p: any) => {
-        if (!p.expense_split_id) return true;
+        if (!p.expense_split_id) return true; // Rateio payment (usually null split)
         const type = p.expense_splits?.expenses?.expense_type;
         return type === 'collective';
       }).length;
@@ -180,7 +182,9 @@ export default function Dashboard() {
   const collectiveExpenses = expensesInCycle.filter(e => e.expense_type === "collective");
   const totalMonthExpenses = collectiveExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
   
+  // Calculate User's Share of Collective Expenses (Meu Rateio)
   const myCollectiveShare = collectiveExpenses.reduce((sum, e) => {
+    // Force type casting to ensure we handle the join correctly
     const splits = (e.expense_splits as unknown as { user_id: string; amount: number }[]) || [];
     const mySplit = splits.find((s) => s.user_id === user?.id);
     return sum + (mySplit ? Number(mySplit.amount) : 0);
@@ -200,14 +204,17 @@ export default function Dashboard() {
   // Personal Data (In cycle)
   const myPersonalExpenses = expensesInCycle.filter(e => e.created_by === user?.id && e.expense_type === "individual");
   
+  // Expenses paid upfront (Cash/Pix/Debit)
   const totalPersonalCash = myPersonalExpenses
     .filter(e => e.payment_method !== "credit_card")
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
+  // New Credit Card Expenses in this cycle (NOT bill installments)
   const totalPersonalCredit = myPersonalExpenses
     .filter(e => e.payment_method === "credit_card")
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
+  // Bill Installments (Actual Bill to pay)
   const totalBill = billInstallments.reduce((sum: number, i: any) => sum + Number(i.amount), 0);
 
   const totalUserExpenses = myCollectiveShare + totalPersonalCredit;
@@ -223,7 +230,7 @@ export default function Dashboard() {
       .sort((a, b) => b.value - a.value);
   }, [myPersonalExpenses]);
 
-  // Pending Splits Logic
+  // Pending Splits Logic (Filtered by cycle dates)
   const filteredPendingSplits = pendingSplits.filter((s: any) => {
     const dateStr = s.expenses?.purchase_date;
     if (!dateStr) return false;
@@ -238,9 +245,10 @@ export default function Dashboard() {
   const totalCollectivePending = collectivePending.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
   const totalIndividualPending = individualPending.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
 
+  // Cards Data
   const cardsBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
-    creditCards.forEach(c => map[c.id] = 0);
+    creditCards.forEach(c => map[c.id] = 0); // Init
     billInstallments.forEach((i: any) => {
       const cId = i.expenses?.credit_card_id;
       if (cId && map[cId] !== undefined) {
@@ -263,6 +271,7 @@ export default function Dashboard() {
   }, [billInstallments]);
 
 
+  // --- Handlers ---
   const handlePayRateio = async () => {
     if (!receiptFile) return;
     setSaving(true);
@@ -324,6 +333,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Top Header */}
       <DashboardHeader 
         userName={profile?.full_name}
         groupName={membership?.group_name}
@@ -335,6 +345,7 @@ export default function Dashboard() {
         onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
       />
 
+      {/* Main Tabs */}
       <Tabs defaultValue={isAdmin ? "admin" : "republic"} className="space-y-6">
         <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6">
           {isAdmin && (
@@ -353,6 +364,7 @@ export default function Dashboard() {
           </TabsTrigger>
         </TabsList>
 
+        {/* ================= ABA ADMIN ================= */}
         {isAdmin && (
           <TabsContent value="admin" className="space-y-6">
             {adminData ? (
@@ -367,6 +379,7 @@ export default function Dashboard() {
           </TabsContent>
         )}
 
+        {/* ================= ABA REPÚBLICA ================= */}
         <TabsContent value="republic" className="space-y-6">
           <RepublicTab
             collectiveExpenses={collectiveExpenses}
@@ -378,6 +391,7 @@ export default function Dashboard() {
           />
         </TabsContent>
 
+        {/* ================= ABA PESSOAL ================= */}
         <TabsContent value="personal" className="space-y-6">
           <PersonalTab
             totalIndividualPending={totalIndividualPending}
@@ -392,6 +406,7 @@ export default function Dashboard() {
           />
         </TabsContent>
 
+        {/* ================= ABA CARTÕES ================= */}
         <TabsContent value="cards" className="space-y-6">
           <CardsTab 
             totalBill={totalBill}
