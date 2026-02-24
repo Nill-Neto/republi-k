@@ -139,7 +139,7 @@ export function AdminTab({
             <div className="text-2xl font-bold tabular-nums">{pendingPaymentsCount}</div>
             <p className="text-xs text-muted-foreground mt-1">Aguardando confirmação</p>
             {pendingPaymentsCount > 0 && (
-              <Button variant="link" className="p-0 h-auto text-xs mt-2 text-amber-600" asChild>
+              <Button variant="link" className="p-0 h-auto text-xs mt-2" asChild>
                 <Link to="/payments?filter=pending">Confirmar agora <ArrowRight className="h-3 w-3 ml-1" /></Link>
               </Button>
             )}
