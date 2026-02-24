@@ -11,18 +11,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const authHeader = req.headers.get("Authorization")!;
 
-    // Verify user
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!);
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    // Create client with user's JWT — uses RLS automatically
+    const supabase = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Verify user via built-in JWT validation (verify_jwt = true in config.toml)
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -32,13 +31,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "group_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Verify membership
+    // Verify membership via RLS-protected RPC
     const { data: isMember } = await supabase.rpc("is_member_of_group", { _user_id: user.id, _group_id: group_id });
     if (!isMember) {
       return new Response(JSON.stringify({ error: "Not a member" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Fetch data
+    // Fetch data — all queries go through RLS with user's JWT
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
@@ -103,9 +102,8 @@ Deno.serve(async (req) => {
 });
 
 function createSimplePDF(content: string, title: string, subtitle: string): Uint8Array {
-  // Minimal valid PDF with text
   const lines = content.split("\n");
-  const pageHeight = 842; // A4
+  const pageHeight = 842;
   const pageWidth = 595;
   const margin = 50;
   const lineHeight = 14;
@@ -126,25 +124,20 @@ function createSimplePDF(content: string, title: string, subtitle: string): Uint
     currentOffset += new TextEncoder().encode(obj).length;
   };
 
-  // Header
   const header = "%PDF-1.4\n";
   currentOffset = header.length;
 
-  // Catalog (obj 1)
   addObject(`1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`);
 
-  // Pages (obj 2)
   const pageRefs = pages.map((_, i) => `${3 + i * 2} 0 R`).join(" ");
   addObject(`2 0 obj\n<< /Type /Pages /Kids [${pageRefs}] /Count ${pages.length} >>\nendobj\n`);
 
-  // Font (last object)
   const fontObjNum = 3 + pages.length * 2;
 
   pages.forEach((pageLines, pageIdx) => {
     const pageObjNum = 3 + pageIdx * 2;
     const contentObjNum = 4 + pageIdx * 2;
 
-    // Build stream
     let stream = "BT\n";
     stream += `/F1 10 Tf\n`;
     stream += `${margin} ${pageHeight - margin} Td\n`;
@@ -155,21 +148,15 @@ function createSimplePDF(content: string, title: string, subtitle: string): Uint
     });
     stream += "ET\n";
 
-    // Content stream
     addObject(`${contentObjNum} 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}endstream\nendobj\n`);
-
-    // Page
     addObject(`${pageObjNum} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Contents ${contentObjNum} 0 R /Resources << /Font << /F1 ${fontObjNum} 0 R >> >> >>\nendobj\n`);
   });
 
-  // Font
   addObject(`${fontObjNum} 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n`);
 
-  // Build full PDF
   let pdf = header;
   objects.forEach((obj) => { pdf += obj; });
 
-  // Xref
   const xrefOffset = new TextEncoder().encode(pdf).length;
   pdf += `xref\n0 ${objects.length + 1}\n`;
   pdf += `0000000000 65535 f \n`;
