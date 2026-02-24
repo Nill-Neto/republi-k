@@ -47,7 +47,7 @@ export function AdminTab({ memberBalances, members, pendingPaymentsCount }: Admi
            </CardHeader>
            <CardContent>
              <div className="text-3xl font-bold text-destructive">R$ {totalReceivable.toFixed(2)}</div>
-             <p className="text-xs text-muted-foreground mt-1">Soma de saldos devedores</p>
+             <p className="text-xs text-muted-foreground mt-1">Soma de saldos devedores (Coletivo)</p>
            </CardContent>
         </Card>
 
@@ -65,7 +65,7 @@ export function AdminTab({ memberBalances, members, pendingPaymentsCount }: Admi
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5" /> Status dos Moradores
+            <Users className="h-5 w-5" /> Status dos Moradores <span className="text-xs font-normal text-muted-foreground ml-2">(Apenas Rateio Coletivo)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
