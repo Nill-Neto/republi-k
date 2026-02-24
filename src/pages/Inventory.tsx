@@ -124,7 +124,7 @@ export default function Inventory() {
       const { error } = await supabase.from("inventory_items").update({ quantity: newQty }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["inventory"] });
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["inventory"] }),
   });
 
   const deleteItem = useMutation({
