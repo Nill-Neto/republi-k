@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Receipt, TrendingUp, Package, DollarSign, Loader2, ListChecks, User, Calendar, CreditCard, Plus, CalendarClock, Info, AlertCircle } from "lucide-react";
-import { format, subDays, isAfter, isSameDay } from "date-fns";
+import { Receipt, TrendingUp, Package, DollarSign, Loader2, ListChecks, User, Calendar, CreditCard, Plus, CalendarClock, Info, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, subDays, isAfter, isSameDay, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -16,23 +16,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const CATEGORIES = [
-  { value: "rent", label: "Aluguel" },
-  { value: "utilities", label: "Contas (Luz/Água/Gás)" },
-  { value: "internet", label: "Internet/TV" },
-  { value: "cleaning", label: "Limpeza" },
-  { value: "maintenance", label: "Manutenção" },
-  { value: "groceries", label: "Mercado" },
-  { value: "other", label: "Outros" },
-];
-
 export default function Dashboard() {
   const { profile, membership, isAdmin, user } = useAuth();
   const queryClient = useQueryClient();
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
-
+  
+  // Date State for Navigation
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
   // Payment State
   const [payRateioOpen, setPayRateioOpen] = useState(false);
   const [payIndividualOpen, setPayIndividualOpen] = useState(false);
@@ -40,7 +30,7 @@ export default function Dashboard() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // --- Group Queries ---
+  // --- Group Settings ---
   const { data: groupSettings } = useQuery({
     queryKey: ["group-settings-dashboard", membership?.group_id],
     queryFn: async () => {
@@ -50,34 +40,51 @@ export default function Dashboard() {
     enabled: !!membership?.group_id
   });
 
+  const closingDay = groupSettings?.closing_day || 1;
+  const dueDay = groupSettings?.due_day || 10;
+
+  // Initialize Date Logic based on Closing Day
+  // If today is after closing day, the "current" financial month is technically next month.
+  // But usually dashboards default to "This Month". Let's stick to the current calendar month unless adjusted.
+  // The Month Selector will drive the logic.
+
+  // Calculate Cycle Dates based on currentDate state
+  // Cycle Start: Month - 1, Day = closingDay
+  // Cycle End: Month, Day = closingDay (Exclusive)
+  const cycleStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, closingDay);
+  const cycleEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), closingDay);
+  
+  // Calculate Due Date for this specific selected month
+  // If selected month is Nov, and due day is 10. The due date is Nov 10.
+  const cycleDueDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dueDay);
+  
+  // Limit Date (D-1)
+  const cycleLimitDate = subDays(cycleDueDate, 1);
+  
+  // Check if Late (only relevant if looking at current or past months)
+  const now = new Date();
+  const isLate = isAfter(now, cycleLimitDate) && !isSameDay(now, cycleLimitDate);
+
+  // --- Queries ---
+
+  // 1. Month Expenses (Group Spend) - Filtered by Cycle
   const { data: monthExpenses } = useQuery({
-    queryKey: ["month-expenses", membership?.group_id, groupSettings?.closing_day],
+    queryKey: ["month-expenses", membership?.group_id, cycleStart.toISOString(), cycleEnd.toISOString()],
     queryFn: async () => {
-      const closingDay = groupSettings?.closing_day || 1;
-      const today = new Date();
-      let startDateStr;
-
-      // Logic: If today >= closing day, we are in the cycle that started on closing day of THIS month.
-      // If today < closing day, we are in the cycle that started on closing day of LAST month.
-      if (today.getDate() >= closingDay) {
-        const d = new Date(today.getFullYear(), today.getMonth(), closingDay);
-        startDateStr = d.toISOString().split('T')[0];
-      } else {
-        const d = new Date(today.getFullYear(), today.getMonth() - 1, closingDay);
-        startDateStr = d.toISOString().split('T')[0];
-      }
-
       const { data } = await supabase
         .from("expenses")
         .select("amount")
         .eq("group_id", membership!.group_id)
-        .gte("created_at", startDateStr); // Ideally use purchase_date if available, but created_at is safer fallback
+        .gte("created_at", cycleStart.toISOString())
+        .lt("created_at", cycleEnd.toISOString());
       
       return (data ?? []).reduce((sum, e) => sum + Number(e.amount), 0);
     },
     enabled: !!membership?.group_id
   });
 
+  // 2. Pending Splits (Debts) - ALWAYS Current Status (All Time)
+  // We don't filter debts by month because a debt is a debt until paid.
   const { data: pendingSplits } = useQuery({
     queryKey: ["my-pending-splits", membership?.group_id, user?.id],
     queryFn: async () => {
@@ -92,60 +99,26 @@ export default function Dashboard() {
     enabled: !!membership?.group_id && !!user?.id,
   });
 
-  // --- Personal Queries (Faturas e Gastos Individuais) ---
-  
-  // 1. Fetch Cards to know closing dates
-  const { data: cards = [], isSuccess: cardsLoaded } = useQuery({
-    queryKey: ["credit-cards", user?.id],
+  // 3. Personal Bill - Filtered by Month/Year of currentDate
+  const { data: currentBill } = useQuery({
+    queryKey: ["personal-bill-summary", user?.id, currentDate.getMonth(), currentDate.getFullYear()],
     queryFn: async () => {
-      const { data } = await supabase.from("credit_cards").select("*").eq("user_id", user!.id);
-      return data ?? [];
+      const targetMonth = currentDate.getMonth() + 1; // 1-12
+      const targetYear = currentDate.getFullYear();
+
+      const { data } = await supabase
+        .from("expense_installments")
+        .select("amount")
+        .eq("user_id", user!.id)
+        .eq("bill_month", targetMonth)
+        .eq("bill_year", targetYear);
+
+      return (data ?? []).reduce((sum, i) => sum + Number(i.amount), 0);
     },
     enabled: !!user,
   });
 
-  // 2. Fetch "Current Open Bill"
-  const { data: currentBill } = useQuery({
-    queryKey: ["personal-bill-summary", user?.id, currentMonth, currentYear, cards],
-    queryFn: async () => {
-      if (cards.length === 0) return 0;
-
-      let nextMonth = currentMonth + 1;
-      let nextYear = currentYear;
-      if (nextMonth > 12) { nextMonth = 1; nextYear++; }
-
-      const { data } = await supabase
-        .from("expense_installments" as any)
-        .select("amount, bill_month, bill_year, expenses!inner(credit_card_id)")
-        .eq("user_id", user!.id)
-        .or(`and(bill_month.eq.${currentMonth},bill_year.eq.${currentYear}),and(bill_month.eq.${nextMonth},bill_year.eq.${nextYear})`);
-
-      const items = (data as any[]) ?? [];
-      let total = 0;
-
-      items.forEach((item) => {
-        const card = cards.find((c: any) => c.id === item.expenses?.credit_card_id);
-        if (!card) return;
-
-        const today = new Date();
-        let targetM = today.getMonth() + 1;
-        let targetY = today.getFullYear();
-
-        if (today.getDate() >= card.closing_day) {
-          targetM++;
-          if (targetM > 12) { targetM = 1; targetY++; }
-        }
-
-        if (item.bill_month === targetM && item.bill_year === targetY) {
-          total += Number(item.amount);
-        }
-      });
-
-      return total;
-    },
-    enabled: !!user && cardsLoaded,
-  });
-
+  // 4. Recent Activity (Global)
   const { data: recentExpenses } = useQuery({
     queryKey: ["recent-expenses", membership?.group_id],
     queryFn: async () => {
@@ -163,7 +136,6 @@ export default function Dashboard() {
   // Split calculations
   const collectivePending = (pendingSplits ?? []).filter((s: any) => s.expenses?.expense_type === "collective");
   const individualPending = (pendingSplits ?? []).filter((s: any) => s.expenses?.expense_type === "individual");
-  
   const totalCollective = collectivePending.reduce((sum, s: any) => sum + Number(s.amount), 0);
 
   // --- Handlers ---
@@ -226,77 +198,56 @@ export default function Dashboard() {
     }
   };
 
-  // Determine next closing date
-  const closingDay = groupSettings?.closing_day || 1;
-  const nextClosingDate = new Date();
-  if (now.getDate() >= closingDay) {
-      nextClosingDate.setMonth(nextClosingDate.getMonth() + 1);
-  }
-  nextClosingDate.setDate(closingDay);
-
-  // Determine next DUE date and LIMIT date
-  const dueDay = groupSettings?.due_day || 10;
-  
-  // Calculate the "official" due date for the CURRENT cycle
-  const currentCycleDueDate = new Date();
-  // If today is past the due day (e.g. today 11, due 10), the "next" cycle due date is next month.
-  // BUT for "Late" calculation, we care about the *nearest* payment that might be unpaid.
-  // If I haven't paid, and today is 11th, I am late for the 10th.
-  
-  // Let's establish the target due date based on current day
-  if (now.getDate() > dueDay) {
-    // We are past due day in current month.
-    // If debt exists, it's late.
-    currentCycleDueDate.setDate(dueDay); 
-  } else {
-    // We are before due day in current month.
-    currentCycleDueDate.setDate(dueDay);
-  }
-
-  // Calculate Limit Date (Due Date - 1 day)
-  const limitDate = subDays(currentCycleDueDate, 1);
-  const isLate = isAfter(now, limitDate) && !isSameDay(now, limitDate); // Late if now > limitDate (checked at start of day)
-  
-  // For Display "Pagar até": If we are NOT late for this month, show this month's limit.
-  // If we ARE late (or today is the limit), show this month's limit to emphasize urgency.
-  // If we paid everything (totalCollective == 0), we can show next month's limit.
-  
-  let displayLimitDate = new Date(limitDate);
-  if (totalCollective === 0 && now.getDate() > limitDate.getDate()) {
-     // No debt and passed the date -> show next month
-     displayLimitDate.setMonth(displayLimitDate.getMonth() + 1);
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Header & Controls */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-serif">Olá, {profile?.full_name?.split(" ")[0]}</h1>
           <p className="text-muted-foreground mt-1">{membership?.group_name}</p>
-          {groupSettings && (
-             <div className="flex flex-wrap gap-2 mt-2">
-                <Badge variant="outline" className="gap-1 font-normal">
-                   <CalendarClock className="h-3 w-3 text-primary" /> 
-                   Fecha dia <strong>{closingDay}</strong>
-                </Badge>
-                <Badge variant="outline" className="gap-1 font-normal">
-                   <Calendar className="h-3 w-3 text-destructive" /> 
-                   Pagar até dia <strong>{format(displayLimitDate, "dd")}</strong>
-                </Badge>
-             </div>
-          )}
         </div>
-        <div className="flex gap-2">
-           <Button variant="outline" size="sm" asChild>
-             <Link to="/personal/bills"><Calendar className="h-4 w-4 mr-2" /> Minhas Faturas</Link>
-           </Button>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+           {/* Month Selector */}
+           <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
+             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+               <ChevronLeft className="h-4 w-4" />
+             </Button>
+             <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
+               {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+             </div>
+             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+               <ChevronRight className="h-4 w-4" />
+             </Button>
+           </div>
+           
+           <div className="flex gap-2">
+             <Button variant="outline" size="sm" asChild className="h-10">
+               <Link to="/personal/bills"><Calendar className="h-4 w-4 mr-2" /> Faturas</Link>
+             </Button>
+           </div>
         </div>
       </div>
 
+      {/* Info Badges (Dynamic Dates) */}
+      {groupSettings && (
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm">
+              <CalendarClock className="h-3.5 w-3.5 text-primary" /> 
+              Fecha: <strong>{format(cycleEnd, "dd/MM")}</strong>
+          </Badge>
+          <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm">
+              <Calendar className="h-3.5 w-3.5 text-destructive" /> 
+              Pagar até: <strong>{format(cycleLimitDate, "dd/MM")}</strong>
+          </Badge>
+        </div>
+      )}
+
       {/* Main Financial Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Collective Debt */}
-        <Card className={`relative overflow-hidden ${isLate && totalCollective > 0 ? "border-destructive bg-destructive/10" : "border-destructive/20 bg-destructive/5"}`}>
+        
+        {/* Collective Debt (Rateio) - This is mostly "All time" but we show alert based on current view date */}
+        <Card className={`relative overflow-hidden transition-all ${isLate && totalCollective > 0 ? "border-destructive bg-destructive/10" : "border-destructive/20 bg-destructive/5"}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardDescription className={isLate && totalCollective > 0 ? "text-destructive font-bold" : "text-destructive font-medium"}>
@@ -305,7 +256,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-1 mt-1">
                 {isLate && totalCollective > 0 && <AlertCircle className="h-3 w-3 text-destructive" />}
                 <p className={`text-[10px] ${isLate && totalCollective > 0 ? "text-destructive font-bold" : "text-destructive/80"}`}>
-                   Limite: {format(displayLimitDate, "dd/MM", { locale: ptBR })}
+                   Vencimento da ref.: {format(cycleLimitDate, "dd/MM")}
                 </p>
               </div>
             </div>
@@ -324,7 +275,7 @@ export default function Dashboard() {
         {/* Individual Pending */}
         <Card className="border-warning/20 bg-warning/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-warning-foreground font-medium">Meus Gastos Pendentes</CardDescription>
+            <CardDescription className="text-warning-foreground font-medium">Gastos Individuais Pendentes</CardDescription>
             <User className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
@@ -337,26 +288,26 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Credit Card Bill */}
+        {/* Credit Card Bill (Dynamic by Month) */}
         <Card className="bg-primary text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-primary-foreground/70">Fatura Atual (Aberta)</CardDescription>
+            <CardDescription className="text-primary-foreground/70">Fatura Pessoal ({format(currentDate, "MMM")})</CardDescription>
             <CreditCard className="h-4 w-4 text-primary-foreground/70" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold font-serif">R$ {(currentBill ?? 0).toFixed(2)}</p>
-            <p className="text-[10px] uppercase tracking-wider mt-2 opacity-60">Cartões Individuais</p>
+            <p className="text-[10px] uppercase tracking-wider mt-2 opacity-60">Cartões de Crédito</p>
           </CardContent>
         </Card>
 
-        {/* Group Spend */}
+        {/* Group Spend (Dynamic by Cycle) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
                <CardDescription>Gastos da República</CardDescription>
                <Tooltip>
                  <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
-                 <TooltipContent><p>Soma das despesas na competência atual.</p></TooltipContent>
+                 <TooltipContent><p>Soma das despesas na competência de {format(currentDate, "MMMM")}.</p></TooltipContent>
                </Tooltip>
             </div>
             <Receipt className="h-4 w-4 text-muted-foreground" />
@@ -364,7 +315,7 @@ export default function Dashboard() {
           <CardContent>
             <p className="text-2xl font-bold font-serif">R$ {(monthExpenses ?? 0).toFixed(2)}</p>
             <p className="text-[10px] uppercase tracking-wider mt-2 text-muted-foreground">
-              Fecha dia {groupSettings?.closing_day || 1}
+              Competência {format(currentDate, "MM/yy")}
             </p>
           </CardContent>
         </Card>
