@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Users, ArrowRight, ShieldAlert, Wallet } from "lucide-react";
+import { Users, ArrowRight, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AdminTabProps {
   memberBalances: any[];
@@ -11,6 +12,12 @@ interface AdminTabProps {
 }
 
 export function AdminTab({ memberBalances, members, pendingPaymentsCount }: AdminTabProps) {
+  const queryClient = useQueryClient();
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-dashboard-data"] });
+  };
+
   const membersWithBalance = members.map(m => {
     const bal = memberBalances.find(b => b.user_id === m.user_id);
     return {
@@ -21,10 +28,17 @@ export function AdminTab({ memberBalances, members, pendingPaymentsCount }: Admi
     };
   });
 
-  const totalReceivable = membersWithBalance.reduce((acc, m) => acc + (m.balance < 0 ? Math.abs(m.balance) : 0), 0);
+  // Calculate total receivable (sum of negative balances)
+  const totalReceivable = membersWithBalance.reduce((acc, m) => acc + (m.balance < -0.01 ? Math.abs(m.balance) : 0), 0);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex justify-end">
+        <Button variant="ghost" size="sm" onClick={handleRefresh} className="h-8 text-xs text-muted-foreground hover:text-primary gap-1">
+          <RefreshCw className="h-3 w-3" /> Atualizar dados
+        </Button>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-1 border-l-4 border-l-primary">
            <CardHeader className="pb-2">
@@ -43,11 +57,11 @@ export function AdminTab({ memberBalances, members, pendingPaymentsCount }: Admi
 
         <Card className="md:col-span-1 border-l-4 border-l-destructive">
            <CardHeader className="pb-2">
-             <CardTitle className="text-sm font-medium text-muted-foreground">Total a Receber</CardTitle>
+             <CardTitle className="text-sm font-medium text-muted-foreground">Total a Receber (Rateio)</CardTitle>
            </CardHeader>
            <CardContent>
              <div className="text-3xl font-bold text-destructive">R$ {totalReceivable.toFixed(2)}</div>
-             <p className="text-xs text-muted-foreground mt-1">Soma de saldos devedores (Coletivo)</p>
+             <p className="text-xs text-muted-foreground mt-1">Soma de rateios coletivos pendentes</p>
            </CardContent>
         </Card>
 
