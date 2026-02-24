@@ -159,9 +159,14 @@ export default function Bills() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Detalhamento</CardTitle>
-            <Badge variant="outline" className="text-xs font-normal">
-              {sortedInstallments.length} lançamento(s)
-            </Badge>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                Total: <span className="font-bold">R$ {totalBill.toFixed(2)}</span>
+              </span>
+              <Badge variant="outline" className="text-xs font-normal">
+                {sortedInstallments.length} lançamento(s)
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div> : sortedInstallments.length === 0 ? (
