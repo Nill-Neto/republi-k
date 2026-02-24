@@ -38,12 +38,12 @@ export function PersonalTab({
         {/* Total Geral - Destaque */}
         <Card className="sm:col-span-2 bg-primary text-primary-foreground border-0 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground/90">Total Geral (Mês)</CardTitle>
+            <CardTitle className="text-sm font-medium text-primary-foreground/90">Total Comprometido (Mês)</CardTitle>
             <Wallet className="h-4 w-4 text-primary-foreground/70" />
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-bold font-serif">R$ {totalUserExpenses.toFixed(2)}</div>
-            <p className="text-xs text-primary-foreground/70 mt-1">Soma de Rateio + Faturas de Cartão.</p>
+            <p className="text-xs text-primary-foreground/70 mt-1">Soma de Rateio + Gastos Individuais (Crédito).</p>
           </CardContent>
         </Card>
 
@@ -91,15 +91,15 @@ export function PersonalTab({
           </CardContent>
         </Card>
 
-        {/* Fatura Atual */}
-        <Card>
+        {/* Fatura Atual (Visualização Apenas) */}
+        <Card className="opacity-80 hover:opacity-100 transition-opacity">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Fatura Cartão</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Fatura Cartão (Estimada)</CardTitle>
             <div className="h-4 w-4 text-muted-foreground">💳</div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-serif">R$ {totalBill.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Estimativa da fatura atual.</p>
+            <p className="text-xs text-muted-foreground mt-1">Parcelas a vencer.</p>
           </CardContent>
         </Card>
       </div>

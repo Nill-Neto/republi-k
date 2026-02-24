@@ -62,7 +62,7 @@ export default function Dashboard() {
 
   // --- Queries ---
 
-  // 1. All Expenses in Cycle (Updated to fetch SPLITS explicitly)
+  // 1. All Expenses in Cycle
   const { data: expensesInCycle = [] } = useQuery({
     queryKey: ["expenses-dashboard", membership?.group_id, cycleStart.toISOString(), cycleEnd.toISOString()],
     queryFn: async () => {
@@ -140,8 +140,9 @@ export default function Dashboard() {
   
   // Calculate User's Share of Collective Expenses (Meu Rateio)
   const myCollectiveShare = collectiveExpenses.reduce((sum, e) => {
-    const splits = (e.expense_splits as any[]) || [];
-    const mySplit = splits.find((s: any) => s.user_id === user?.id);
+    // Force type casting to ensure we handle the join correctly
+    const splits = (e.expense_splits as unknown as { user_id: string; amount: number }[]) || [];
+    const mySplit = splits.find((s) => s.user_id === user?.id);
     return sum + (mySplit ? Number(mySplit.amount) : 0);
   }, 0);
 
@@ -159,17 +160,23 @@ export default function Dashboard() {
   // Personal Data (In cycle)
   const myPersonalExpenses = expensesInCycle.filter(e => e.created_by === user?.id && e.expense_type === "individual");
   
-  // Expenses paid upfront (Cash/Pix/Debit) - used for card display but NOT for total calculation
+  // Expenses paid upfront (Cash/Pix/Debit)
   const totalPersonalCash = myPersonalExpenses
     .filter(e => e.payment_method !== "credit_card")
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
-  // Bill Installments (Credit Card)
+  // New Credit Card Expenses in this cycle (NOT bill installments)
+  const totalPersonalCredit = myPersonalExpenses
+    .filter(e => e.payment_method === "credit_card")
+    .reduce((sum, e) => sum + Number(e.amount), 0);
+
+  // Bill Installments (Actual Bill to pay)
   const totalBill = billInstallments.reduce((sum: number, i: any) => sum + Number(i.amount), 0);
 
-  // Total User Expenses (Rateio + Bill Installments ONLY) - "sem 'à vista' somado"
-  // This represents what the user "owes" or "has billed" this month, excluding immediate cash spending.
-  const totalUserExpenses = myCollectiveShare + totalBill;
+  // NEW FORMULA: Rateio + Individual Expenses (Credit only)
+  // Cash expenses are excluded as requested. Bill installments excluded as requested.
+  // This represents "New Debt Generated This Month".
+  const totalUserExpenses = myCollectiveShare + totalPersonalCredit;
 
   const personalChartData = useMemo(() => {
     const categories: Record<string, number> = {};
