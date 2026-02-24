@@ -20,8 +20,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, CreditCard as CreditCardIcon, Trash2 } from "lucide-react";
+import { Loader2, CreditCard as CreditCardIcon, Trash2, Pencil } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const cardSchema = z.object({
   label: z.string().min(3, "Informe o apelido do cartão"),
@@ -48,9 +56,161 @@ const brandOptions = [
   { value: "outros", label: "Outros" },
 ];
 
+function EditCardDialog({ card, open, onOpenChange }: { card: any, open: boolean, onOpenChange: (open: boolean) => void }) {
+  const queryClient = useQueryClient();
+  const form = useForm<CardFormValues>({
+    resolver: zodResolver(cardSchema),
+    defaultValues: {
+      label: "",
+      brand: "",
+      closing_day: 5,
+      due_day: 10,
+      limit_amount: "",
+    },
+  });
+
+  useEffect(() => {
+    if (card) {
+      form.reset({
+        label: card.label,
+        brand: card.brand,
+        closing_day: card.closing_day,
+        due_day: card.due_day,
+        limit_amount: card.limit_amount !== null ? String(card.limit_amount) : "",
+      });
+    }
+  }, [card, form]);
+
+  const updateCard = useMutation({
+    mutationFn: async (values: CardFormValues) => {
+      const limitAmount = values.limit_amount ? Number(values.limit_amount) : null;
+      const { error } = await supabase.from("credit_cards").update({
+        label: values.label.trim(),
+        brand: values.brand,
+        closing_day: values.closing_day,
+        due_day: values.due_day,
+        limit_amount: limitAmount,
+      }).eq("id", card.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["credit-cards"] });
+      toast({ title: "Cartão atualizado" });
+      onOpenChange(false);
+    },
+    onError: (err: any) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+  });
+
+  const onSubmit = (values: CardFormValues) => {
+    updateCard.mutate(values);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar cartão</DialogTitle>
+          <DialogDescription>Altere as informações do seu cartão.</DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+            <FormField
+              control={form.control}
+              name="label"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Apelido</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Nubank" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="brand"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bandeira</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a bandeira" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {brandOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="closing_day"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dia de fechamento</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={1} max={31} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="due_day"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dia de vencimento</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={1} max={31} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="limit_amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Limite (opcional)</FormLabel>
+                  <FormControl>
+                    <Input type="number" min={0} step="0.01" placeholder="R$" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full" disabled={updateCard.isPending}>
+              {updateCard.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar alterações
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function CreditCards() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [editingCard, setEditingCard] = useState<any>(null);
 
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardSchema),
@@ -269,36 +429,46 @@ export default function CreditCards() {
                         )}
                       </div>
                     </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir cartão?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Isso removerá o cartão e pode afetar o histórico de despesas associadas.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteCard.mutate(card.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-primary"
+                        onClick={() => setEditingCard(card)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir cartão?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Isso removerá o cartão e pode afetar o histórico de despesas associadas.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteCard.mutate(card.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 );
               })
@@ -306,6 +476,12 @@ export default function CreditCards() {
           </CardContent>
         </Card>
       </div>
+
+      <EditCardDialog
+        card={editingCard}
+        open={!!editingCard}
+        onOpenChange={(open) => !open && setEditingCard(null)}
+      />
     </div>
   );
 }
