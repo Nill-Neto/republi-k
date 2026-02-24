@@ -132,8 +132,9 @@ export default function GroupSettings() {
                 value={dueDay} 
                 onChange={(e) => setDueDay(e.target.value)} 
               />
-              <p className="text-[10px] text-muted-foreground">
-                Data limite sugerida para os moradores pagarem o rateio.
+              <p className="text-[10px] text-muted-foreground font-medium text-warning-foreground">
+                Data limite para pagamento será <strong>um dia antes</strong> (Dia {parseInt(dueDay) - 1 || 30}). 
+                No dia {dueDay} já será considerado atraso.
               </p>
             </div>
           </div>

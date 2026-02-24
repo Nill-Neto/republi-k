@@ -5,8 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Receipt, TrendingUp, Package, DollarSign, Loader2, ListChecks, User, Calendar, CreditCard, Plus, CalendarClock, Info } from "lucide-react";
-import { format, startOfMonth } from "date-fns";
+import { Receipt, TrendingUp, Package, DollarSign, Loader2, ListChecks, User, Calendar, CreditCard, Plus, CalendarClock, Info, AlertCircle } from "lucide-react";
+import { format, subDays, isAfter, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -234,13 +234,38 @@ export default function Dashboard() {
   }
   nextClosingDate.setDate(closingDay);
 
-  // Determine next due date
+  // Determine next DUE date and LIMIT date
   const dueDay = groupSettings?.due_day || 10;
-  const nextDueDate = new Date();
-  if (now.getDate() >= dueDay) {
-    nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+  
+  // Calculate the "official" due date for the CURRENT cycle
+  const currentCycleDueDate = new Date();
+  // If today is past the due day (e.g. today 11, due 10), the "next" cycle due date is next month.
+  // BUT for "Late" calculation, we care about the *nearest* payment that might be unpaid.
+  // If I haven't paid, and today is 11th, I am late for the 10th.
+  
+  // Let's establish the target due date based on current day
+  if (now.getDate() > dueDay) {
+    // We are past due day in current month.
+    // If debt exists, it's late.
+    currentCycleDueDate.setDate(dueDay); 
+  } else {
+    // We are before due day in current month.
+    currentCycleDueDate.setDate(dueDay);
   }
-  nextDueDate.setDate(dueDay);
+
+  // Calculate Limit Date (Due Date - 1 day)
+  const limitDate = subDays(currentCycleDueDate, 1);
+  const isLate = isAfter(now, limitDate) && !isSameDay(now, limitDate); // Late if now > limitDate (checked at start of day)
+  
+  // For Display "Pagar até": If we are NOT late for this month, show this month's limit.
+  // If we ARE late (or today is the limit), show this month's limit to emphasize urgency.
+  // If we paid everything (totalCollective == 0), we can show next month's limit.
+  
+  let displayLimitDate = new Date(limitDate);
+  if (totalCollective === 0 && now.getDate() > limitDate.getDate()) {
+     // No debt and passed the date -> show next month
+     displayLimitDate.setMonth(displayLimitDate.getMonth() + 1);
+  }
 
   return (
     <div className="space-y-6">
@@ -256,7 +281,7 @@ export default function Dashboard() {
                 </Badge>
                 <Badge variant="outline" className="gap-1 font-normal">
                    <Calendar className="h-3 w-3 text-destructive" /> 
-                   Vence dia <strong>{dueDay}</strong>
+                   Pagar até dia <strong>{format(displayLimitDate, "dd")}</strong>
                 </Badge>
              </div>
           )}
@@ -271,13 +296,18 @@ export default function Dashboard() {
       {/* Main Financial Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Collective Debt */}
-        <Card className="border-destructive/20 bg-destructive/5 relative overflow-hidden">
+        <Card className={`relative overflow-hidden ${isLate && totalCollective > 0 ? "border-destructive bg-destructive/10" : "border-destructive/20 bg-destructive/5"}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardDescription className="text-destructive font-medium">Rateio Pendente</CardDescription>
-              <p className="text-[10px] text-destructive/80 mt-1">
-                 Vencimento: {format(nextDueDate, "dd/MM", { locale: ptBR })}
-              </p>
+              <CardDescription className={isLate && totalCollective > 0 ? "text-destructive font-bold" : "text-destructive font-medium"}>
+                {isLate && totalCollective > 0 ? "Rateio em Atraso" : "Rateio Pendente"}
+              </CardDescription>
+              <div className="flex items-center gap-1 mt-1">
+                {isLate && totalCollective > 0 && <AlertCircle className="h-3 w-3 text-destructive" />}
+                <p className={`text-[10px] ${isLate && totalCollective > 0 ? "text-destructive font-bold" : "text-destructive/80"}`}>
+                   Limite: {format(displayLimitDate, "dd/MM", { locale: ptBR })}
+                </p>
+              </div>
             </div>
             <TrendingUp className="h-4 w-4 text-destructive" />
           </CardHeader>
@@ -334,7 +364,7 @@ export default function Dashboard() {
           <CardContent>
             <p className="text-2xl font-bold font-serif">R$ {(monthExpenses ?? 0).toFixed(2)}</p>
             <p className="text-[10px] uppercase tracking-wider mt-2 text-muted-foreground">
-              Fecha em {format(nextClosingDate, "dd/MM", { locale: ptBR })}
+              Fecha dia {groupSettings?.closing_day || 1}
             </p>
           </CardContent>
         </Card>
