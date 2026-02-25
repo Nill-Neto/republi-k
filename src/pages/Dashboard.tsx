@@ -63,9 +63,17 @@ export default function Dashboard() {
 
   // --- Queries ---
 
-  // 1. All Expenses in Cycle
-  const { data: expensesInCycle = [] } = useQuery({
-    queryKey: ["expenses-dashboard", membership?.group_id, cycleStart.toISOString(), cycleEnd.toISOString()],
+  // 1. Fetch ALL relevant data for the cycle
+  // We need: 
+  // - Expenses with purchase_date in cycle (for cash items)
+  // - Installments with bill_month/year in cycle (for card items)
+  
+  const targetMonth = currentDate.getMonth() + 1;
+  const targetYear = currentDate.getFullYear();
+
+  // 1.1 All Expenses (used to get metadata and cash items)
+  const { data: expensesRaw = [] } = useQuery({
+    queryKey: ["expenses-dashboard-raw", membership?.group_id, cycleStart.toISOString(), cycleEnd.toISOString()],
     queryFn: async () => {
       const dbStart = format(cycleStart, "yyyy-MM-dd");
       const dbEnd = format(cycleEnd, "yyyy-MM-dd");
@@ -89,7 +97,30 @@ export default function Dashboard() {
     enabled: !!membership?.group_id
   });
 
-  // 2. Pending Splits
+  // 1.2 All Installments for this cycle in this group
+  const { data: installmentsInCycle = [] } = useQuery({
+    queryKey: ["installments-dashboard", membership?.group_id, targetMonth, targetYear],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("expense_installments" as any)
+        .select(`
+          *,
+          expenses!inner(
+            id, title, category, expense_type, group_id, created_by, amount, installments,
+            expense_splits(user_id, amount)
+          )
+        `)
+        .eq("expenses.group_id", membership!.group_id)
+        .eq("bill_month", targetMonth)
+        .eq("bill_year", targetYear);
+
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!membership?.group_id
+  });
+
+  // 2. Pending Splits (Unchanged - for payment flow)
   const { data: pendingSplits = [] } = useQuery({
     queryKey: ["my-pending-splits", membership?.group_id, user?.id],
     queryFn: async () => {
@@ -104,7 +135,7 @@ export default function Dashboard() {
     enabled: !!membership?.group_id && !!user?.id,
   });
 
-  // 3. User Credit Cards
+  // 3. User Credit Cards (For the Cards tab)
   const { data: creditCards = [] } = useQuery({
     queryKey: ["my-credit-cards", user?.id],
     queryFn: async () => {
@@ -114,26 +145,7 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
-  // 4. Bill Installments
-  const { data: billInstallments = [] } = useQuery({
-    queryKey: ["bill-installments-dashboard", user?.id, currentDate.getMonth(), currentDate.getFullYear()],
-    queryFn: async () => {
-      const targetMonth = currentDate.getMonth() + 1; 
-      const targetYear = currentDate.getFullYear();
-
-      const { data } = await supabase
-        .from("expense_installments" as any)
-        .select("amount, expenses(title, category, credit_card_id)")
-        .eq("user_id", user!.id)
-        .eq("bill_month", targetMonth)
-        .eq("bill_year", targetYear);
-
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  // 5. Admin Data (UPDATED to use v2 function)
+  // 4. Admin Data (Updated to use unifed balances function)
   const { data: adminData } = useQuery({
     queryKey: ["admin-dashboard-data", membership?.group_id],
     queryFn: async () => {
@@ -173,93 +185,128 @@ export default function Dashboard() {
     enabled: !!membership?.group_id && isAdmin
   });
 
-  // --- Data Processing ---
+  // --- DATA PROCESSING (The Fix) ---
 
-  // Republic Data
-  const collectiveExpenses = expensesInCycle.filter(e => e.expense_type === "collective");
-  const totalMonthExpenses = collectiveExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  // Merge Cash Expenses and Current Installments
+  const normalizedCycleItems = useMemo(() => {
+    // 1. Get cash/debit expenses that happened in this cycle
+    const cashItems = expensesRaw
+      .filter(e => e.payment_method !== "credit_card")
+      .map(e => ({
+        id: e.id,
+        title: e.title,
+        amount: Number(e.amount),
+        category: e.category,
+        expense_type: e.expense_type,
+        purchase_date: e.purchase_date,
+        created_by: e.created_by,
+        is_installment: false,
+        splits: (e.expense_splits as any[]) || []
+      }));
+
+    // 2. Get installments that fall into this cycle's bill
+    const installmentItems = (installmentsInCycle as any[]).map((i: any) => {
+      const e = i.expenses;
+      // Calculate split proportion for this specific installment
+      const splits = (e.expense_splits as any[]) || [];
+      const normalizedSplits = splits.map((s: any) => ({
+        ...s,
+        // The split amount for THIS installment is (total_split / total_expense) * installment_amount
+        amount: (Number(s.amount) / Number(e.amount)) * Number(i.amount)
+      }));
+
+      return {
+        id: `${e.id}-inst-${i.installment_number}`,
+        title: `${e.title} (${i.installment_number}/${e.installments})`,
+        amount: Number(i.amount),
+        category: e.category,
+        expense_type: e.expense_type,
+        purchase_date: e.purchase_date, // Original purchase date for sorting
+        created_by: e.created_by,
+        is_installment: true,
+        splits: normalizedSplits
+      };
+    });
+
+    return [...cashItems, ...installmentItems].sort((a, b) => 
+      new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime()
+    );
+  }, [expensesRaw, installmentsInCycle]);
+
+  // REPUBLIC TOTALS
+  const collectiveItems = normalizedCycleItems.filter(e => e.expense_type === "collective");
+  const totalMonthExpenses = collectiveItems.reduce((sum, e) => sum + e.amount, 0);
   
-  const myCollectiveShare = collectiveExpenses.reduce((sum, e) => {
-    const splits = (e.expense_splits as unknown as { user_id: string; amount: number }[]) || [];
-    const mySplit = splits.find((s) => s.user_id === user?.id);
+  const myCollectiveShare = collectiveItems.reduce((sum, e) => {
+    const mySplit = e.splits.find((s: any) => s.user_id === user?.id);
     return sum + (mySplit ? Number(mySplit.amount) : 0);
   }, 0);
 
   const republicChartData = useMemo(() => {
     const categories: Record<string, number> = {};
-    collectiveExpenses.forEach(e => {
+    collectiveItems.forEach(e => {
       const label = getCategoryLabel(e.category);
-      categories[label] = (categories[label] || 0) + Number(e.amount);
+      categories[label] = (categories[label] || 0) + e.amount;
     });
     return Object.entries(categories)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  }, [collectiveExpenses]);
+  }, [collectiveItems]);
 
-  // Personal Data (In cycle)
-  const myPersonalExpenses = expensesInCycle.filter(e => e.created_by === user?.id && e.expense_type === "individual");
+  // PERSONAL TOTALS
+  const myPersonalItems = normalizedCycleItems.filter(e => e.created_by === user?.id && e.expense_type === "individual");
   
-  const totalPersonalCash = myPersonalExpenses
-    .filter(e => e.payment_method !== "credit_card")
-    .reduce((sum, e) => sum + Number(e.amount), 0);
+  const totalPersonalCash = myPersonalItems
+    .filter(e => !e.is_installment)
+    .reduce((sum, e) => sum + e.amount, 0);
 
-  const totalPersonalCredit = myPersonalExpenses
-    .filter(e => e.payment_method === "credit_card")
-    .reduce((sum, e) => sum + Number(e.amount), 0);
+  const totalBill = normalizedCycleItems
+    .filter(e => e.is_installment && e.created_by === user?.id)
+    .reduce((sum, e) => sum + e.amount, 0);
 
-  const totalBill = billInstallments.reduce((sum: number, i: any) => sum + Number(i.amount), 0);
-
-  const totalUserExpenses = myCollectiveShare + totalPersonalCredit;
+  const totalUserExpenses = myCollectiveShare + totalBill;
 
   const personalChartData = useMemo(() => {
     const categories: Record<string, number> = {};
-    myPersonalExpenses.forEach(e => {
+    myPersonalItems.forEach(e => {
       const label = getCategoryLabel(e.category);
-      categories[label] = (categories[label] || 0) + Number(e.amount);
+      categories[label] = (categories[label] || 0) + e.amount;
     });
     return Object.entries(categories)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  }, [myPersonalExpenses]);
+  }, [myPersonalItems]);
 
-  // Pending Splits Logic
-  const filteredPendingSplits = pendingSplits.filter((s: any) => {
-    const dateStr = s.expenses?.purchase_date;
-    if (!dateStr) return false;
-    const expenseDateStr = dateStr;
-    const startStr = format(cycleStart, "yyyy-MM-dd");
-    const endStr = format(cycleEnd, "yyyy-MM-dd");
-    return expenseDateStr >= startStr && expenseDateStr < endStr;
-  });
-
-  const collectivePending = filteredPendingSplits.filter((s: any) => s.expenses?.expense_type === "collective");
-  const individualPending = filteredPendingSplits.filter((s: any) => s.expenses?.expense_type === "individual");
+  // PENDING FLOW (Keep filtering current cycle)
+  const collectivePending = pendingSplits.filter((s: any) => s.expenses?.expense_type === "collective");
+  const individualPending = pendingSplits.filter((s: any) => s.expenses?.expense_type === "individual");
   const totalCollectivePending = collectivePending.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
   const totalIndividualPending = individualPending.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
 
   const cardsBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
     creditCards.forEach(c => map[c.id] = 0);
-    billInstallments.forEach((i: any) => {
+    (installmentsInCycle as any[]).forEach((i: any) => {
+      if (i.user_id !== user?.id) return;
       const cId = i.expenses?.credit_card_id;
       if (cId && map[cId] !== undefined) {
         map[cId] += Number(i.amount);
       }
     });
     return map;
-  }, [creditCards, billInstallments]);
+  }, [creditCards, installmentsInCycle, user?.id]);
 
   const cardsChartData = useMemo(() => {
     const categories: Record<string, number> = {};
-    billInstallments.forEach((i: any) => {
-      const rawCat = i.expenses?.category || "other";
-      const label = getCategoryLabel(rawCat);
+    (installmentsInCycle as any[]).forEach((i: any) => {
+      if (i.user_id !== user?.id) return;
+      const label = getCategoryLabel(i.expenses?.category || "other");
       categories[label] = (categories[label] || 0) + Number(i.amount);
     });
     return Object.entries(categories)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  }, [billInstallments]);
+  }, [installmentsInCycle, user?.id]);
 
 
   const handlePayRateio = async () => {
@@ -359,7 +406,7 @@ export default function Dashboard() {
                 memberBalances={adminData.balances} 
                 members={adminData.members} 
                 pendingPaymentsCount={adminData.pendingPaymentsCount}
-                collectiveExpenses={collectiveExpenses}
+                collectiveExpenses={collectiveItems}
                 totalMonthExpenses={totalMonthExpenses}
                 cycleStart={cycleStart}
                 cycleEnd={cycleEnd}
@@ -373,7 +420,7 @@ export default function Dashboard() {
 
         <TabsContent value="republic" className="space-y-6">
           <RepublicTab
-            collectiveExpenses={collectiveExpenses}
+            collectiveExpenses={collectiveItems}
             totalMonthExpenses={totalMonthExpenses}
             republicChartData={republicChartData}
             totalCollectivePending={totalCollectivePending}
@@ -391,7 +438,7 @@ export default function Dashboard() {
             totalUserExpenses={totalUserExpenses}
             myCollectiveShare={myCollectiveShare}
             personalChartData={personalChartData}
-            myPersonalExpenses={myPersonalExpenses}
+            myPersonalExpenses={myPersonalItems}
             onPayIndividual={() => setPayIndividualOpen(true)}
           />
         </TabsContent>
@@ -403,7 +450,7 @@ export default function Dashboard() {
             cardsChartData={cardsChartData}
             creditCards={creditCards}
             cardsBreakdown={cardsBreakdown}
-            billInstallments={billInstallments}
+            billInstallments={(installmentsInCycle as any[]).filter(i => i.user_id === user?.id)}
           />
         </TabsContent>
       </Tabs>
