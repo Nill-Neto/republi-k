@@ -1140,6 +1140,10 @@ export type Database = {
         Returns: boolean
       }
       read_my_cpf: { Args: never; Returns: string }
+      user_has_split_on_expense: {
+        Args: { _expense_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "morador"
