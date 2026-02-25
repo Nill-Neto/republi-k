@@ -1,21 +1,11 @@
 // @ts-nocheck
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { PDFDocument, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 import { encodeBase64 } from "https://deno.land/std@0.207.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Helper for CSV escaping
-const escapeCsv = (str: any) => {
-  if (str === null || str === undefined) return "";
-  const string = String(str);
-  if (string.includes(",") || string.includes('"') || string.includes("\n")) {
-    return `"${string.replace(/"/g, '""')}"`;
-  }
-  return string;
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -27,7 +17,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const authHeader = req.headers.get("Authorization");
 
     if (!authHeader) {
@@ -35,15 +25,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "No auth header" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const supabase = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Extract JWT token and verify user
+    const token = authHeader.replace("Bearer ", "");
+    const serviceClient = createClient(supabaseUrl, serviceKey);
+    const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
     if (authError || !user) {
       console.error("[generate-report] Auth error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Use service role client for data queries
+    const supabase = serviceClient;
 
     const body = await req.json();
     const { group_id, format = 'pdf' } = body;
