@@ -93,25 +93,63 @@ export default function Expenses() {
   // --- QUERIES ---
 
   const { data: expenses, isLoading: loadingExpenses } = useQuery({
-    queryKey: ["expenses", membership?.group_id, cycleStart.toISOString(), cycleEnd.toISOString()],
+    queryKey: ["expenses", membership?.group_id, cycleStart.toISOString(), cycleEnd.toISOString(), currentDate.toISOString()],
     queryFn: async () => {
       const dbStart = format(cycleStart, "yyyy-MM-dd");
       const dbEnd = format(cycleEnd, "yyyy-MM-dd");
       
-      // Busca simplificada: Pega TODAS as despesas da tabela expenses neste período.
-      // Removemos o filtro de 'credit_card' e a busca complexa de parcelas para garantir
-      // que o morador veja tudo o que está registrado na tabela principal.
-      const { data, error } = await supabase
+      const targetMonth = currentDate.getMonth() + 1;
+      const targetYear = currentDate.getFullYear();
+
+      // 1. Fetch Non-Credit Card Expenses (Cash/Debit/Pix) - Filtered by Purchase Date
+      const { data: cashExpenses, error: cashError } = await supabase
         .from("expenses")
         .select("*, expense_splits(id, user_id, amount, status, paid_at)")
         .eq("group_id", membership!.group_id)
+        .neq("payment_method", "credit_card")
         .gte("purchase_date", dbStart)
-        .lt("purchase_date", dbEnd)
-        .order("purchase_date", { ascending: false });
+        .lt("purchase_date", dbEnd);
       
-      if (error) throw error;
+      if (cashError) throw cashError;
 
-      return data ?? [];
+      // 2. Fetch Credit Card Installments - Filtered by Bill Month/Year
+      // This ensures we show the specific installment for this month, not the whole expense
+      const { data: installmentsData, error: instError } = await supabase
+        .from("expense_installments")
+        .select("*, expenses!inner(*, expense_splits(id, user_id, amount, status, paid_at))")
+        .eq("expenses.group_id", membership!.group_id)
+        .eq("bill_month", targetMonth)
+        .eq("bill_year", targetYear);
+
+      if (instError) throw instError;
+
+      // Transform installments to match the expense structure for the UI
+      const formattedInstallments = (installmentsData || []).map((inst: any) => {
+        const parent = inst.expenses;
+        
+        // Calculate proportional splits for this specific installment
+        // If total is 1000 and my split is 500 (50%), and this installment is 100, my split here is 50.
+        const proportionalSplits = parent.expense_splits?.map((split: any) => ({
+          ...split,
+          amount: (Number(split.amount) / Number(parent.amount)) * Number(inst.amount)
+        }));
+
+        return {
+          ...parent,
+          id: parent.id, // Keep parent ID for edit/delete actions
+          real_id: `inst_${inst.id}`, // Unique ID for React rendering keys
+          title: `${parent.title} (${inst.installment_number}/${parent.installments})`,
+          amount: inst.amount, // Display the INSTALLMENT amount, not total
+          expense_splits: proportionalSplits,
+          is_installment: true,
+          original_amount: parent.amount, // Keep ref to total for editing
+          purchase_date: parent.purchase_date // Keep original date for sorting/display
+        };
+      });
+
+      // Combine and sort by date
+      const all = [...(cashExpenses || []), ...formattedInstallments];
+      return all.sort((a, b) => new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime());
     },
     enabled: !!membership?.group_id,
   });
@@ -326,8 +364,8 @@ export default function Expenses() {
     resetForm();
     setEditingType("expense");
     setEditingId(expense.id);
-    setTitle(expense.title);
-    setAmount(String(expense.amount));
+    setTitle(expense.is_installment ? expense.title.replace(/\s\(\d+\/\d+\)$/, "") : expense.title);
+    setAmount(String(expense.original_amount || expense.amount)); 
     setDescription(expense.description || "");
     setDateValue(expense.purchase_date || format(new Date(), "yyyy-MM-dd"));
     setExpenseType(expense.expense_type);
@@ -364,26 +402,22 @@ export default function Expenses() {
     setOpen(true);
   };
 
-  // Filter logic: Ensure collective expenses are seen by everyone
+  // Filter logic
   const filteredAll = (expenses ?? []).filter(e => {
+    // Collective expenses are for everyone
     if (e.expense_type === 'collective') return true;
+    // Individual expenses: show if I created it OR if I am part of the split
     if (e.created_by === user?.id) return true;
-    // Also show individual expenses where the user is involved in the split
     const splits = (e.expense_splits as any[]) || [];
     return splits.some((s: any) => s.user_id === user?.id);
   });
 
-  const filteredMine = (expenses ?? []).filter(e => {
-    // Only show "My" expenses (created by me or assigned to me) that are INDIVIDUAL
-    if (e.expense_type !== 'individual') return false;
-    
-    // Created by me
-    if (e.created_by === user?.id) return true;
-    
-    // Assigned to me (I am in the splits)
-    const splits = (e.expense_splits as any[]) || [];
-    return splits.some((s: any) => s.user_id === user?.id);
-  });
+  const filteredMine = (expenses ?? []).filter(e => 
+    e.expense_type === 'individual' && (
+      e.created_by === user?.id || 
+      (e.expense_splits as any[])?.some(s => s.user_id === user?.id)
+    )
+  );
 
   const filteredCollective = (expenses ?? []).filter(e => e.expense_type === 'collective');
 
@@ -564,21 +598,21 @@ export default function Expenses() {
         <TabsContent value="all" className="space-y-3 mt-4">
           {filteredAll.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa encontrada nesta competência.</p>}
           {filteredAll.map((e) => (
-            <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => openEditExpense(e)} onDelete={() => deleteExpense.mutate(e.id)} />
+            <ExpenseCard key={e.real_id || e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => openEditExpense(e)} onDelete={() => deleteExpense.mutate(e.id)} />
           ))}
         </TabsContent>
         
         <TabsContent value="mine" className="space-y-3 mt-4">
           {filteredMine.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa individual encontrada nesta competência.</p>}
           {filteredMine.map((e) => (
-            <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => openEditExpense(e)} onDelete={() => deleteExpense.mutate(e.id)} />
+            <ExpenseCard key={e.real_id || e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => openEditExpense(e)} onDelete={() => deleteExpense.mutate(e.id)} />
           ))}
         </TabsContent>
 
         <TabsContent value="collective" className="space-y-3 mt-4">
           {filteredCollective.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa coletiva encontrada nesta competência.</p>}
           {filteredCollective.map((e) => (
-            <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => openEditExpense(e)} onDelete={() => deleteExpense.mutate(e.id)} />
+            <ExpenseCard key={e.real_id || e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => openEditExpense(e)} onDelete={() => deleteExpense.mutate(e.id)} />
           ))}
         </TabsContent>
 
@@ -632,7 +666,9 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit, onDelete }: any)
                     <AlertDialogHeader>
                       <AlertDialogTitle>Excluir despesa?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Tem certeza que deseja excluir esta despesa? Essa ação não pode ser desfeita.
+                        {expense.is_installment 
+                          ? "Isso excluirá a despesa original e todas as suas parcelas." 
+                          : "Tem certeza que deseja excluir esta despesa? Essa ação não pode ser desfeita."}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
