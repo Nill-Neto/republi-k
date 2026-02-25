@@ -379,21 +379,25 @@ export default function Members() {
               </div>
 
               <div className="space-y-4 border-t pt-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-full"><Mail className="h-4 w-4 text-muted-foreground" /></div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="text-sm font-medium">{viewingMember.profile?.email}</p>
-                  </div>
-                </div>
+                {(isAdmin || viewingMember.user_id === user?.id) && (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-muted p-2 rounded-full"><Mail className="h-4 w-4 text-muted-foreground" /></div>
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">Email</p>
+                        <p className="text-sm font-medium">{viewingMember.profile?.email}</p>
+                      </div>
+                    </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-full"><Phone className="h-4 w-4 text-muted-foreground" /></div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Telefone</p>
-                    <p className="text-sm font-medium">{viewingMember.profile?.phone || "Não informado"}</p>
-                  </div>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-muted p-2 rounded-full"><Phone className="h-4 w-4 text-muted-foreground" /></div>
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">Telefone</p>
+                        <p className="text-sm font-medium">{viewingMember.profile?.phone || "Não informado"}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex items-center gap-3">
                   <div className="bg-muted p-2 rounded-full"><Calendar className="h-4 w-4 text-muted-foreground" /></div>
