@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { DollarSign, AlertCircle, TrendingUp, Users, Wallet } from "lucide-react";
+import { AlertCircle, DollarSign, TrendingUp, Users, Wallet } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { CHART_COLORS, CATEGORY_COLORS } from "@/constants/categories";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 interface PersonalTabProps {
   totalIndividualPending: number;
@@ -16,7 +17,7 @@ interface PersonalTabProps {
   myCollectiveShare: number;
   personalChartData: any[];
   myPersonalExpenses: any[];
-  onPayIndividual: () => void;
+  onPayIndividual?: () => void; // Made optional as it's no longer used in the UI
 }
 
 export function PersonalTab({
@@ -28,7 +29,6 @@ export function PersonalTab({
   myCollectiveShare,
   personalChartData,
   myPersonalExpenses,
-  onPayIndividual,
 }: PersonalTabProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -72,9 +72,34 @@ export function PersonalTab({
               R$ {totalIndividualPending.toFixed(2)}
             </div>
             {individualPending.length > 0 && (
-              <Button variant="outline" size="sm" className="mt-2 h-7 text-xs border-warning/50 text-warning-foreground hover:bg-warning/20 w-full" onClick={onPayIndividual}>
-                Pagar
-              </Button>
+              <div className="mt-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2">
+                      Ver {individualPending.length} itens pendentes
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider mb-2">Detalhamento</h4>
+                      <ScrollArea className="h-[200px]">
+                        <div className="space-y-2">
+                          {individualPending.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-start text-sm border-b pb-2 last:border-0 last:pb-0">
+                              <span className="text-muted-foreground w-[140px] truncate" title={item.expenses?.title}>
+                                {item.expenses?.title}
+                              </span>
+                              <span className="font-medium whitespace-nowrap">
+                                R$ {Number(item.amount).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             )}
           </CardContent>
         </Card>
