@@ -1056,6 +1056,7 @@ export type Database = {
     }
     Functions: {
       accept_invite: { Args: { _token: string }; Returns: Json }
+      admin_read_cpf: { Args: { _target_user_id: string }; Returns: string }
       confirm_payment: {
         Args: { _payment_id: string; _status?: string }
         Returns: undefined
@@ -1135,6 +1136,7 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
+      read_my_cpf: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "admin" | "morador"
