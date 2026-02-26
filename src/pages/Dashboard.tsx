@@ -196,13 +196,7 @@ export default function Dashboard() {
     .filter(e => e.payment_method !== "credit_card")
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
-  const totalPersonalCredit = myPersonalExpenses
-    .filter(e => e.payment_method === "credit_card")
-    .reduce((sum, e) => sum + Number(e.amount), 0);
-
   const totalBill = billInstallments.reduce((sum: number, i: any) => sum + Number(i.amount), 0);
-
-  const totalUserExpenses = myCollectiveShare + totalPersonalCredit;
 
   const personalChartData = useMemo(() => {
     const categories: Record<string, number> = {};
@@ -241,6 +235,9 @@ export default function Dashboard() {
   // Combine them for the list
   const individualPending = [...manualIndividualPending, ...installmentIndividualPending];
   const totalIndividualPending = individualPending.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
+
+  // Total User Expenses (Comprometido) = Share + Individual Pending (Cash/Installments)
+  const totalUserExpenses = myCollectiveShare + totalIndividualPending;
 
   const cardsBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
