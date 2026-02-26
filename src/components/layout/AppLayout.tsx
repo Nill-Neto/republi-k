@@ -179,13 +179,18 @@ export function AppLayout() {
           <SidebarContent />
         </aside>
 
-        {/* Sidebar Mobile (Aparece abaixo do header sem escurecer) */}
+        {/* Sidebar Mobile (Aparece abaixo do header sem escurecer a tela toda) */}
         {mobileMenuOpen && (
-          <div className="absolute inset-0 z-40 md:hidden flex flex-col bg-background/95 backdrop-blur-sm">
-            <div className="w-full h-full bg-primary text-primary-foreground overflow-y-auto">
+          <>
+            {/* Overlay invisível para fechar ao clicar fora, mas sem escurecer */}
+            <div 
+              className="absolute inset-0 z-30 md:hidden" 
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="absolute top-0 left-0 bottom-0 z-40 w-64 md:hidden bg-primary text-primary-foreground shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-300">
               <SidebarContent />
             </div>
-          </div>
+          </>
         )}
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
