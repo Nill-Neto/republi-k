@@ -77,11 +77,11 @@ export function AppLayout() {
   const sidebarGroups = isAdmin ? [...mainNavGroups, adminGroup] : mainNavGroups;
 
   const Logo = () => (
-    <Link to="/" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
+    <Link to="/" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight shrink-0">
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
         R
       </div>
-      <span className="hidden xs:inline">Republi-K</span>
+      <span>Republi-K</span>
     </Link>
   );
 
@@ -103,9 +103,9 @@ export function AppLayout() {
 
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
-      {/* Header Superior Fixo */}
-      <header className="z-40 flex h-14 shrink-0 items-center justify-between border-b bg-background/95 px-4 md:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center gap-4">
+      {/* Header Superior Fixo - Global */}
+      <header className="z-50 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 px-4 md:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-4 min-w-0">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden shrink-0">
@@ -113,10 +113,8 @@ export function AppLayout() {
                 <span className="sr-only">Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <div className="p-6 border-b">
-                <Logo />
-              </div>
+            {/* Mobile Sidebar - Começa abaixo do header via margem ou altura customizada */}
+            <SheetContent side="left" className="w-72 p-0 mt-16 h-[calc(100vh-64px)] border-t">
               <SidebarContent />
             </SheetContent>
           </Sheet>
@@ -165,12 +163,14 @@ export function AppLayout() {
         </div>
       </header>
 
-      {/* Conteúdo Principal (Sidebar + Main) */}
+      {/* Área Principal - Abaixo do Header */}
       <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden w-64 shrink-0 border-r bg-card/30 md:flex md:flex-col overflow-y-auto">
+        {/* Sidebar Desktop - Altura fixa à tela menos o header */}
+        <aside className="hidden w-64 shrink-0 border-r bg-card/30 md:flex md:flex-col">
           <SidebarContent />
         </aside>
 
+        {/* Conteúdo com scroll independente */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto w-full">
             <Outlet />
