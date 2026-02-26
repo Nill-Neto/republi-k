@@ -145,6 +145,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     redirectTo: `${window.location.origin}${redirectPath}`,
   },
 });
+  const redirectTo = `${window.location.origin}${redirectPath}`;
+
+// detecta se está embutido
+const inIframe = window.self !== window.top;
+
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: "google",
+  options: {
+    redirectTo,
+    skipBrowserRedirect: true, // <- importante
+  },
+});
+
+if (error) throw error;
+
+// data.url é a URL do Google
+if (inIframe) {
+  // em preview embutido, abre fora do iframe
+  window.open(data.url, "_blank", "noopener,noreferrer");
+} else {
+  // fora do iframe, pode redirecionar normal
+  window.location.assign(data.url);
+}
   };
 
   const signOut = async () => {
