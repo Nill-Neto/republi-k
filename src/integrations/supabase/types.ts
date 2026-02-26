@@ -1113,6 +1113,17 @@ export type Database = {
         }
         Returns: string
       }
+      get_group_member_public_profiles: {
+        Args: { _group_id: string }
+        Returns: {
+          active: boolean
+          avatar_url: string
+          full_name: string
+          group_id: string
+          id: string
+          split_percentage: number
+        }[]
+      }
       get_member_balances: {
         Args: { _group_id: string }
         Returns: {

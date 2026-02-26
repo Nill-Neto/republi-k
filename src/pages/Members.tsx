@@ -80,21 +80,27 @@ export default function Members() {
         .eq("active", true);
       if (gmErr) throw gmErr;
 
-      // Use view for non-sensitive data (name, avatar) - accessible to all group members
-      const [{ data: viewProfiles }, { data: roles }] = await Promise.all([
-        supabase
-          .from("group_member_profiles")
-          .select("id, full_name, avatar_url")
-          .eq("group_id", membership!.group_id)
-          .eq("active", true),
+      const [{ data: viewProfiles, error: viewErr }, { data: roles, error: roleErr }] = await Promise.all([
+        supabase.rpc("get_group_member_public_profiles" as any, {
+          _group_id: membership!.group_id,
+        } as any),
         supabase
           .from("user_roles")
           .select("user_id, role")
           .eq("group_id", membership!.group_id),
       ]);
 
+      if (viewErr) throw viewErr;
+      if (roleErr) throw roleErr;
+
+      const publicProfiles = (viewProfiles ?? []) as Array<{
+        id: string;
+        full_name: string | null;
+        avatar_url: string | null;
+      }>;
+
       return groupMembers.map((gm) => {
-        const profile = viewProfiles?.find((p) => p.id === gm.user_id);
+        const profile = publicProfiles.find((p) => p.id === gm.user_id);
         const role = roles?.find((r) => r.user_id === gm.user_id);
         return {
           ...gm,
@@ -252,7 +258,13 @@ export default function Members() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {members?.map((m) => {
-          const initials = (m.profile?.full_name || "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+          const displayName = m.profile?.full_name?.trim() || "Morador sem nome";
+          const initials = displayName
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
           const isMe = m.user_id === user?.id;
 
           return (
@@ -269,7 +281,7 @@ export default function Members() {
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">
-                      {m.profile?.full_name} {isMe && "(Você)"}
+                      {displayName} {isMe && "(Você)"}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       {m.role === "admin" ? (
@@ -385,11 +397,11 @@ export default function Members() {
                 <Avatar className="h-20 w-20 border-2 border-primary/10">
                   <AvatarImage src={viewingMember.profile?.avatar_url} />
                   <AvatarFallback className="text-xl">
-                    {(viewingMember.profile?.full_name || "?").substring(0, 2).toUpperCase()}
+                    {(viewingMember.profile?.full_name?.trim() || "Morador sem nome").substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="text-lg font-bold">{viewingMember.profile?.full_name}</h3>
+                  <h3 className="text-lg font-bold">{viewingMember.profile?.full_name?.trim() || "Morador sem nome"}</h3>
                   <Badge variant={viewingMember.role === "admin" ? "default" : "secondary"} className="mt-1">
                     {viewingMember.role === "admin" ? "Administrador" : "Morador"}
                   </Badge>
