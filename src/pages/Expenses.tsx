@@ -125,6 +125,10 @@ export default function Expenses() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceDay, setRecurrenceDay] = useState("5");
 
+  // Installment action dialogs
+  const [deleteConfirmExpense, setDeleteConfirmExpense] = useState<any>(null);
+  const [editConfirmExpense, setEditConfirmExpense] = useState<any>(null);
+
   // --- Date Cycle Logic ---
   const { currentDate, cycleStart, cycleEnd, nextMonth, prevMonth, loading } = useCycleDates(membership?.group_id);
 
@@ -140,7 +144,8 @@ export default function Expenses() {
     }
   }, [category]);
 
-  const { data: expenses = [], isLoading: loadingExpenses } = useQuery({
+  // Fetch expenses whose purchase_date falls in the current cycle
+  const { data: cycleExpenses = [], isLoading: loadingExpenses } = useQuery({
     queryKey: ["expenses", membership?.group_id, cycleStart.toISOString(), cycleEnd.toISOString()],
     queryFn: async () => {
       const dbStart = format(cycleStart, "yyyy-MM-dd");
@@ -160,6 +165,7 @@ export default function Expenses() {
     enabled: !!membership?.group_id,
   });
 
+  // Fetch installments for the current bill month/year
   const { data: monthInstallments = [], isLoading: loadingInstallments } = useQuery({
     queryKey: ["expense-installments-by-month", membership?.group_id, currentDate.getMonth(), currentDate.getFullYear()],
     queryFn: async () => {
@@ -172,13 +178,40 @@ export default function Expenses() {
         .eq("bill_month", targetMonth)
         .eq("bill_year", targetYear);
 
-      // Se o usuário não tiver permissão, não quebrar a tela: só não teremos enriquecimento visual
-      // (a despesa coletiva ainda aparecerá via tabela expenses).
       if (error) return [] as InstallmentRow[];
       return (data ?? []) as InstallmentRow[];
     },
     enabled: !!membership?.group_id,
   });
+
+  // Find expense IDs from installments that are NOT already in cycleExpenses
+  const missingExpenseIds = useMemo(() => {
+    const cycleIds = new Set(cycleExpenses.map((e) => e.id));
+    return [...new Set(monthInstallments.map((i) => i.expense_id).filter((id) => !cycleIds.has(id)))];
+  }, [cycleExpenses, monthInstallments]);
+
+  // Fetch those missing parent expenses
+  const { data: installmentParentExpenses = [], isLoading: loadingParents } = useQuery({
+    queryKey: ["installment-parent-expenses", missingExpenseIds],
+    queryFn: async () => {
+      if (missingExpenseIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*, expense_splits(id, user_id, amount, status, paid_at)")
+        .in("id", missingExpenseIds);
+      if (error) throw error;
+      return (data ?? []) as ExpenseRow[];
+    },
+    enabled: missingExpenseIds.length > 0,
+  });
+
+  // Merge all expenses
+  const allExpenses = useMemo(() => {
+    const map = new Map<string, ExpenseRow>();
+    cycleExpenses.forEach((e) => map.set(e.id, e));
+    installmentParentExpenses.forEach((e) => map.set(e.id, e));
+    return Array.from(map.values());
+  }, [cycleExpenses, installmentParentExpenses]);
 
   const installmentByExpenseId = useMemo(() => {
     const map = new Map<string, InstallmentRow>();
@@ -209,13 +242,17 @@ export default function Expenses() {
     enabled: !!user,
   });
 
-  const deleteExpense = useMutation({
+  const deleteExpenseMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Delete installments first, then the expense (cascade should handle splits)
+      await supabase.from("expense_installments").delete().eq("expense_id", id);
       const { error } = await supabase.from("expenses").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["expense-installments-by-month"] });
+      queryClient.invalidateQueries({ queryKey: ["installment-parent-expenses"] });
       queryClient.invalidateQueries({ queryKey: ["bill-installments"] });
       toast({ title: "Despesa excluída." });
     },
@@ -284,6 +321,7 @@ export default function Expenses() {
           .eq("id", editingId);
         if (error) throw error;
 
+        // Regenerate installments
         await supabase.from("expense_installments").delete().eq("expense_id", editingId);
 
         if (paymentMethod === "credit_card" && finalCreditCardId && parsedInstallments > 0) {
@@ -318,6 +356,7 @@ export default function Expenses() {
         queryClient.invalidateQueries({ queryKey: ["expenses"] });
         queryClient.invalidateQueries({ queryKey: ["bill-installments"] });
         queryClient.invalidateQueries({ queryKey: ["expense-installments-by-month"] });
+        queryClient.invalidateQueries({ queryKey: ["installment-parent-expenses"] });
       } else {
         const { error } = await supabase.rpc("create_expense_with_splits", {
           _group_id: membership!.group_id,
@@ -362,6 +401,7 @@ export default function Expenses() {
         toast({ title: "Despesa criada!" });
         queryClient.invalidateQueries({ queryKey: ["expenses"] });
         queryClient.invalidateQueries({ queryKey: ["expense-installments-by-month"] });
+        queryClient.invalidateQueries({ queryKey: ["installment-parent-expenses"] });
       }
 
       setOpen(false);
@@ -432,23 +472,20 @@ export default function Expenses() {
     setOpen(true);
   };
 
+  // Decorate expenses with installment info (without modifying the title)
   const decoratedExpenses = useMemo(() => {
-    return expenses.map((e) => {
-      if (e.payment_method !== "credit_card") return e;
-
+    return allExpenses.map((e) => {
       const inst = installmentByExpenseId.get(e.id);
       if (!inst) return e;
 
       return {
         ...e,
-        real_id: `inst_${inst.id}`,
-        is_installment: true,
-        original_amount: e.amount,
-        amount: inst.amount,
-        title: `${e.title} (${inst.installment_number}/${e.installments || 1})`,
+        _installment_number: inst.installment_number,
+        _installment_amount: inst.amount,
+        _is_installment: true,
       };
     });
-  }, [expenses, installmentByExpenseId]);
+  }, [allExpenses, installmentByExpenseId]);
 
   const filteredAll = (decoratedExpenses ?? []).filter((e: any) => {
     if (e.expense_type === "collective") return true;
@@ -466,7 +503,24 @@ export default function Expenses() {
 
   const filteredCollective = (decoratedExpenses ?? []).filter((e: any) => e.expense_type === "collective");
 
-  if (loadingExpenses || loadingRecurring || loading || loadingInstallments) {
+  // Handlers for installment-aware edit/delete
+  const handleEditClick = (expense: any) => {
+    if (expense._is_installment && expense.installments > 1) {
+      setEditConfirmExpense(expense);
+    } else {
+      openEditExpense(expense);
+    }
+  };
+
+  const handleDeleteClick = (expense: any) => {
+    if (expense._is_installment && expense.installments > 1) {
+      setDeleteConfirmExpense(expense);
+    } else {
+      deleteExpenseMutation.mutate(expense.id);
+    }
+  };
+
+  if (loadingExpenses || loadingRecurring || loading || loadingInstallments || loadingParents) {
     return (
       <div className="flex justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -500,6 +554,7 @@ export default function Expenses() {
           </Button>
         </div>
 
+        {/* Edit form dialog */}
         <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -646,6 +701,53 @@ export default function Expenses() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit confirmation for installment expenses */}
+        <AlertDialog open={!!editConfirmExpense} onOpenChange={(v) => { if (!v) setEditConfirmExpense(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Editar despesa parcelada</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta despesa possui {editConfirmExpense?.installments} parcelas. A edição afetará a despesa e <strong>todas as parcelas</strong> serão recalculadas. Deseja continuar?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={() => {
+                const exp = editConfirmExpense;
+                setEditConfirmExpense(null);
+                openEditExpense(exp);
+              }}>
+                Editar despesa completa
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete confirmation for installment expenses */}
+        <AlertDialog open={!!deleteConfirmExpense} onOpenChange={(v) => { if (!v) setDeleteConfirmExpense(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir despesa parcelada?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta despesa possui {deleteConfirmExpense?.installments} parcelas. Ao excluir, <strong>todas as parcelas</strong> serão removidas. Essa ação não pode ser desfeita. Deseja continuar?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  const id = deleteConfirmExpense?.id;
+                  setDeleteConfirmExpense(null);
+                  if (id) deleteExpenseMutation.mutate(id);
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir todas as parcelas
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="text-sm text-muted-foreground">
@@ -667,13 +769,13 @@ export default function Expenses() {
           {filteredAll.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa encontrada nesta competência.</p>}
           {filteredAll.map((e: any) => (
             <ExpenseCard
-              key={e.real_id || e.id}
+              key={e.id}
               expense={e}
               userId={user?.id}
               isAdmin={isAdmin}
               cards={cards}
-              onEdit={() => openEditExpense(e)}
-              onDelete={() => deleteExpense.mutate(e.id)}
+              onEdit={() => handleEditClick(e)}
+              onDelete={() => handleDeleteClick(e)}
             />
           ))}
         </TabsContent>
@@ -682,13 +784,13 @@ export default function Expenses() {
           {filteredMine.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa individual encontrada nesta competência.</p>}
           {filteredMine.map((e: any) => (
             <ExpenseCard
-              key={e.real_id || e.id}
+              key={e.id}
               expense={e}
               userId={user?.id}
               isAdmin={isAdmin}
               cards={cards}
-              onEdit={() => openEditExpense(e)}
-              onDelete={() => deleteExpense.mutate(e.id)}
+              onEdit={() => handleEditClick(e)}
+              onDelete={() => handleDeleteClick(e)}
             />
           ))}
         </TabsContent>
@@ -697,13 +799,13 @@ export default function Expenses() {
           {filteredCollective.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa coletiva encontrada nesta competência.</p>}
           {filteredCollective.map((e: any) => (
             <ExpenseCard
-              key={e.real_id || e.id}
+              key={e.id}
               expense={e}
               userId={user?.id}
               isAdmin={isAdmin}
               cards={cards}
-              onEdit={() => openEditExpense(e)}
-              onDelete={() => deleteExpense.mutate(e.id)}
+              onEdit={() => handleEditClick(e)}
+              onDelete={() => handleDeleteClick(e)}
             />
           ))}
         </TabsContent>
@@ -733,6 +835,9 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit, onDelete }: any)
   const cardLabel = cards.find((c: any) => c.id === expense.credit_card_id)?.label;
   const canManage = isAdmin || expense.created_by === userId;
 
+  const isInstallment = expense._is_installment && expense.installments > 1;
+  const displayAmount = isInstallment ? expense._installment_amount : expense.amount;
+
   return (
     <Card>
       <CardContent className="p-4">
@@ -747,6 +852,11 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit, onDelete }: any)
               >
                 {expense.expense_type === "collective" ? "Coletiva" : "Individual"}
               </Badge>
+              {isInstallment && (
+                <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                  Parcela {expense._installment_number}/{expense.installments}
+                </Badge>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-2">
               <span className="flex items-center gap-1">
@@ -761,7 +871,10 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit, onDelete }: any)
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-lg font-bold">R$ {Number(expense.amount).toFixed(2)}</p>
+            <p className="text-lg font-bold">R$ {Number(displayAmount).toFixed(2)}</p>
+            {isInstallment && (
+              <p className="text-[10px] text-muted-foreground">Total: R$ {Number(expense.amount).toFixed(2)}</p>
+            )}
             {mySplit && expense.expense_type === "collective" && (
               <Badge variant="secondary" className="text-[10px]">
                 Sua parte: R$ {Number(mySplit.amount).toFixed(2)}
