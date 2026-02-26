@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CHART_COLORS, CATEGORY_COLORS } from "@/constants/categories";
+import { CHART_COLORS, CATEGORY_COLORS, getCategoryLabel } from "@/constants/categories";
 import { 
   Dialog, 
   DialogContent, 
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 
 interface PersonalTabProps {
   totalIndividualPending: number;
+  totalCollectivePending: number;
   individualPending: any[];
   totalPersonalCash: number;
   totalBill: number;
@@ -29,6 +30,7 @@ interface PersonalTabProps {
 
 export function PersonalTab({
   totalIndividualPending,
+  totalCollectivePending,
   individualPending,
   totalPersonalCash,
   totalBill,
@@ -43,41 +45,47 @@ export function PersonalTab({
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Total Comprometido */}
-        <Card className="sm:col-span-2 bg-primary text-primary-foreground border-0 shadow-md">
+        {/* Total Comprometido (Mês) */}
+        <Card className="sm:col-span-1 bg-primary text-primary-foreground border-0 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground/90">Total Comprometido (Mês)</CardTitle>
+            <CardTitle className="text-sm font-medium text-primary-foreground/90">Total Comprometido</CardTitle>
             <Wallet className="h-4 w-4 text-primary-foreground/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">R$ {totalUserExpenses.toFixed(2)}</div>
-            <p className="text-xs text-primary-foreground/70 mt-1">Soma de Rateio + Gastos Individuais (Cartão).</p>
+            <div className="text-2xl font-bold">R$ {totalUserExpenses.toFixed(2)}</div>
+            <p className="text-xs text-primary-foreground/70 mt-1">Meu Rateio + Gastos (Cartão).</p>
           </CardContent>
         </Card>
 
-        {/* Meu Rateio */}
-        <Card>
+        {/* Card Restaurado: Rateio Pendente */}
+        <Card className={`${totalCollectivePending > 0 ? "border-destructive/30 bg-destructive/5" : ""}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Meu Rateio da Casa</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className={`text-sm font-medium ${totalCollectivePending > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+              Rateio Pendente
+            </CardTitle>
+            <Users className={`h-4 w-4 ${totalCollectivePending > 0 ? "text-destructive" : "text-muted-foreground"}`} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {myCollectiveShare.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Sua parte nas despesas coletivas.</p>
+            <div className={`text-2xl font-bold ${totalCollectivePending > 0 ? "text-destructive" : ""}`}>
+              R$ {totalCollectivePending.toFixed(2)}
+            </div>
+            {totalCollectivePending > 0 ? (
+              <p className="text-xs text-destructive mt-1 font-medium">Você deve isso ao grupo.</p>
+            ) : (
+              <p className="text-xs text-success mt-1 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Em dia com a casa.
+              </p>
+            )}
           </CardContent>
         </Card>
 
-        {/* Pendências Individuais (Corrigido) */}
+        {/* Pendências Individuais (Controle Próprio) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pendências Pessoais
+              Pendências Individuais
             </CardTitle>
-            {totalIndividualPending > 0 ? (
-              <AlertCircle className="h-4 w-4 text-warning" />
-            ) : (
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-            )}
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
@@ -92,8 +100,8 @@ export function PersonalTab({
                       <List className="h-3 w-3" /> Ver lista ({individualPending.length})
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md p-0 gap-0">
-                    <DialogHeader className="p-4 border-b">
+                  <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden flex flex-col max-h-[80vh]">
+                    <DialogHeader className="p-4 border-b shrink-0">
                       <DialogTitle className="text-base font-medium flex items-center gap-2">
                         Controle Individual
                         <Badge variant="outline" className="ml-auto font-normal">
@@ -102,39 +110,41 @@ export function PersonalTab({
                       </DialogTitle>
                     </DialogHeader>
                     
-                    <ScrollArea className="h-[300px]">
-                      <div className="divide-y">
-                        {individualPending.map((item) => (
-                          <div key={item.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                            <div className="min-w-0 pr-4">
-                              <p className="text-sm font-medium truncate">{item.expenses?.title}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                  {item.expenses?.category || "Geral"}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {item.expenses?.purchase_date ? format(new Date(item.expenses.purchase_date), "dd/MM/yyyy") : "Data n/d"}
-                                </span>
+                    <div className="flex-1 overflow-hidden">
+                      <ScrollArea className="h-full">
+                        <div className="divide-y">
+                          {individualPending.map((item) => (
+                            <div key={item.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                              <div className="min-w-0 pr-4">
+                                <p className="text-sm font-medium truncate">{item.expenses?.title}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                    {getCategoryLabel(item.expenses?.category)}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {item.expenses?.purchase_date ? format(new Date(item.expenses.purchase_date), "dd/MM/yyyy") : "Data n/d"}
+                                  </span>
+                                </div>
                               </div>
+                              <span className="font-semibold text-sm tabular-nums whitespace-nowrap">
+                                R$ {Number(item.amount).toFixed(2)}
+                              </span>
                             </div>
-                            <span className="font-semibold text-sm tabular-nums whitespace-nowrap">
-                              R$ {Number(item.amount).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
                     
-                    <div className="p-3 bg-muted/20 border-t text-center">
+                    <div className="p-3 bg-muted/20 border-t text-center shrink-0">
                       <p className="text-[10px] text-muted-foreground">
-                        Estas são despesas pessoais que você registrou como pendentes (controle próprio).
+                        Despesas pessoais (controle próprio, não envolve o grupo).
                       </p>
                     </div>
                   </DialogContent>
                 </Dialog>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground mt-1">Nenhuma despesa pessoal em aberto.</p>
+              <p className="text-xs text-muted-foreground mt-1">Nenhum controle pendente.</p>
             )}
           </CardContent>
         </Card>
@@ -172,7 +182,9 @@ export function PersonalTab({
                       <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium">{e.title}</p>
                         <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal bg-muted text-muted-foreground border-0">{e.category}</Badge>
+                          <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal bg-muted text-muted-foreground border-0">
+                            {getCategoryLabel(e.category)}
+                          </Badge>
                           <span className="text-[10px] text-muted-foreground">
                             {format(new Date(e.purchase_date), "dd/MM")} • {e.payment_method === 'credit_card' ? 'Cartão' : 'À vista'}
                           </span>

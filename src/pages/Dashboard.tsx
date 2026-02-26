@@ -93,7 +93,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("expense_splits")
-        .select("id, amount, status, expense_id, expenses:expense_id(title, group_id, expense_type, created_at, purchase_date)")
+        .select("id, amount, status, expense_id, expenses:expense_id(title, category, group_id, expense_type, created_at, purchase_date)")
         .eq("user_id", user!.id)
         .eq("status", "pending");
       if (error) throw error;
@@ -216,11 +216,9 @@ export default function Dashboard() {
   }, [myPersonalExpenses]);
 
   const filteredPendingSplits = pendingSplits.filter((s: any) => {
-    const dateStr = s.expenses?.purchase_date;
-    if (!dateStr) return false;
-    const startStr = format(cycleStart, "yyyy-MM-dd");
-    const endStr = format(cycleEnd, "yyyy-MM-dd");
-    return dateStr >= startStr && dateStr < endStr;
+    // Show all pending splits regardless of date, or filter by logic if needed
+    // Usually pending debts are relevant until paid
+    return true; 
   });
 
   const collectivePending = filteredPendingSplits.filter((s: any) => s.expenses?.expense_type === "collective");
@@ -376,6 +374,7 @@ export default function Dashboard() {
         <TabsContent value="personal" className="space-y-6">
           <PersonalTab
             totalIndividualPending={totalIndividualPending}
+            totalCollectivePending={totalCollectivePending} // Adicionado
             individualPending={individualPending}
             totalPersonalCash={totalPersonalCash}
             totalBill={totalBill}
