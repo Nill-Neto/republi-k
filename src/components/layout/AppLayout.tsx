@@ -207,8 +207,11 @@ export function AppLayout() {
           </>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-background relative">
-          <div className="max-w-7xl mx-auto w-full">
+        <main className="flex-1 overflow-y-auto bg-background relative">
+          {/* Decorative background gradient at the top */}
+          <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pointer-events-none" />
+          
+          <div className="max-w-7xl mx-auto w-full p-4 md:p-8 relative">
             <Outlet />
           </div>
         </main>
