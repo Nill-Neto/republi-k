@@ -149,3 +149,10 @@
     @apply bg-gradient-to-r from-primary to-blue-600;
   }
 }
+
+/* View Transition Support */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
