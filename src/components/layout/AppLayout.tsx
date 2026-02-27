@@ -209,8 +209,8 @@ export function AppLayout() {
 
         <main className="flex-1 overflow-y-auto bg-background relative">
           {/* Brilho decorativo de fundo para o topo da página */}
-          <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-primary/[0.08] via-transparent to-transparent pointer-events-none -z-10" />
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.03] blur-[100px] rounded-full pointer-events-none -z-10 -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-primary/[0.12] via-primary/[0.02] to-transparent pointer-events-none -z-10" />
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/[0.05] blur-[120px] rounded-full pointer-events-none -z-10 -translate-y-1/2 translate-x-1/2" />
           
           <div className="p-4 md:p-8">
             <div className="max-w-7xl mx-auto w-full relative z-0">
