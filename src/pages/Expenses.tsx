@@ -36,6 +36,7 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  Receipt,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -530,301 +531,319 @@ export default function Expenses() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-serif">Despesas</h1>
-          <p className="text-muted-foreground mt-1">Gestão financeira do grupo</p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
-              {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+      <div className="-mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 overflow-hidden">
+        <div className="bg-primary/10 border-b border-primary/20 px-4 md:px-8 py-8 md:py-10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-serif text-foreground">Despesas</h1>
+              <p className="text-muted-foreground font-medium">Gestão financeira do grupo</p>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextMonth}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
 
-          <Button className="gap-2 h-10" onClick={() => { resetForm(); setOpen(true); }}>
-            <Plus className="h-4 w-4" /> Nova Despesa
-          </Button>
-        </div>
-
-        {/* Edit form dialog */}
-        <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="font-serif">
-                {editingId ? (editingType === "recurring" ? "Editar Recorrência" : "Editar Despesa") : "Nova Despesa"}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              {editingType === "expense" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Tipo</Label>
-                    <Select value={expenseType} onValueChange={(v) => setExpenseType(v as any)} disabled={!!editingId}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {isAdmin && (
-                          <SelectItem value="collective">
-                            <div className="flex items-center gap-2"><Users className="h-4 w-4" /> Coletiva</div>
-                          </SelectItem>
-                        )}
-                        <SelectItem value="individual">
-                          <div className="flex items-center gap-2"><User className="h-4 w-4" /> Individual</div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Data da Compra</Label>
-                    <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} />
-                  </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm border border-primary/20 rounded-lg p-1 shadow-sm h-10">
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10" onClick={prevMonth}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="px-2 text-sm font-bold min-w-[140px] text-center capitalize text-primary">
+                  {format(currentDate, "MMMM yyyy", { locale: ptBR })}
                 </div>
-              )}
-
-              {editingType === "recurring" && (
-                <div className="space-y-2">
-                  <Label>Próximo Vencimento</Label>
-                  <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label>Título</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Mercado Mensal" maxLength={200} />
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10" onClick={nextMonth}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
 
+              <Button className="gap-2 h-10 shadow-lg shadow-primary/20" onClick={() => { resetForm(); setOpen(true); }}>
+                <Plus className="h-4 w-4" /> Nova Despesa
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-1">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+          <div className="bg-primary/10 p-1.5 rounded text-primary">
+            <Calendar className="h-4 w-4" />
+          </div>
+          <span>Exibindo competência: <strong>{format(cycleStart, "dd/MM")}</strong> até <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong></span>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6">
+            <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">Todas</TabsTrigger>
+            <TabsTrigger value="mine" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">Minhas</TabsTrigger>
+            <TabsTrigger value="collective" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">Coletivas</TabsTrigger>
+            <TabsTrigger value="recurring" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary gap-2">
+              <RefreshCw className="h-3 w-3" /> Recorrentes
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all" className="space-y-3 mt-6">
+            {filteredAll.length === 0 && (
+              <Card className="border-dashed py-12">
+                <CardContent className="flex flex-col items-center justify-center text-muted-foreground">
+                  <Receipt className="h-10 w-10 mb-2 opacity-20" />
+                  <p>Nenhuma despesa encontrada nesta competência.</p>
+                </CardContent>
+              </Card>
+            )}
+            {filteredAll.map((e: any) => (
+              <ExpenseCard
+                key={e.id}
+                expense={e}
+                userId={user?.id}
+                isAdmin={isAdmin}
+                cards={cards}
+                onEdit={() => handleEditClick(e)}
+                onDelete={() => handleDeleteClick(e)}
+              />
+            ))}
+          </TabsContent>
+
+          {/* Rest of the Tab Contents... */}
+          <TabsContent value="mine" className="space-y-3 mt-6">
+            {filteredMine.length === 0 && <p className="text-center text-muted-foreground py-12 border border-dashed rounded-lg">Nenhuma despesa individual encontrada.</p>}
+            {filteredMine.map((e: any) => (
+              <ExpenseCard
+                key={e.id}
+                expense={e}
+                userId={user?.id}
+                isAdmin={isAdmin}
+                cards={cards}
+                onEdit={() => handleEditClick(e)}
+                onDelete={() => handleDeleteClick(e)}
+              />
+            ))}
+          </TabsContent>
+
+          <TabsContent value="collective" className="space-y-3 mt-6">
+            {filteredCollective.length === 0 && <p className="text-center text-muted-foreground py-12 border border-dashed rounded-lg">Nenhuma despesa coletiva encontrada.</p>}
+            {filteredCollective.map((e: any) => (
+              <ExpenseCard
+                key={e.id}
+                expense={e}
+                userId={user?.id}
+                isAdmin={isAdmin}
+                cards={cards}
+                onEdit={() => handleEditClick(e)}
+                onDelete={() => handleDeleteClick(e)}
+              />
+            ))}
+          </TabsContent>
+
+          <TabsContent value="recurring" className="space-y-3 mt-6">
+            <div className="bg-muted/50 p-3 rounded-lg text-xs text-muted-foreground mb-4">
+              Modelos de despesas que se repetem automaticamente todo mês.
+            </div>
+            {!recurringExpenses?.length && <p className="text-center text-muted-foreground py-12 border border-dashed rounded-lg">Nenhuma recorrência configurada.</p>}
+            {recurringExpenses?.map((r: any) => (
+              <RecurringCard
+                key={r.id}
+                recurring={r}
+                isAdmin={isAdmin}
+                userId={user?.id}
+                onEdit={() => openEditRecurring(r)}
+                onDelete={() => deleteRecurring.mutate(r.id)}
+              />
+            ))}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Dialogs... */}
+      <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">
+              {editingId ? (editingType === "recurring" ? "Editar Recorrência" : "Editar Despesa") : "Nova Despesa"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {editingType === "expense" && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Valor Total (R$)</Label>
-                  <Input type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Categoria</Label>
-                  <Select value={category} onValueChange={setCategory}>
+                  <Label>Tipo</Label>
+                  <Select value={expenseType} onValueChange={(v) => setExpenseType(v as any)} disabled={!!editingId}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {CATEGORIES.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                      ))}
+                      {isAdmin && (
+                        <SelectItem value="collective">
+                          <div className="flex items-center gap-2"><Users className="h-4 w-4" /> Coletiva</div>
+                        </SelectItem>
+                      )}
+                      <SelectItem value="individual">
+                        <div className="flex items-center gap-2"><User className="h-4 w-4" /> Individual</div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              {category === "other" && (
                 <div className="space-y-2">
-                  <Label>Nome da Categoria</Label>
-                  <Input placeholder="Ex: Farmácia" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} />
+                  <Label>Data da Compra</Label>
+                  <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} />
                 </div>
-              )}
+              </div>
+            )}
 
-              {editingType === "expense" && (
-                <div className="space-y-3 pt-2 border-t">
-                  <Label className="text-base font-medium">Pagamento</Label>
-                  <div className="grid grid-cols-2 gap-3">
+            {editingType === "recurring" && (
+              <div className="space-y-2">
+                <Label>Próximo Vencimento</Label>
+                <Input type="date" value={dateValue} onChange={(e) => setDateValue(e.target.value)} />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Título</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Mercado Mensal" maxLength={200} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Valor Total (R$)</Label>
+                <Input type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" />
+              </div>
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {category === "other" && (
+              <div className="space-y-2">
+                <Label>Nome da Categoria</Label>
+                <Input placeholder="Ex: Farmácia" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} />
+              </div>
+            )}
+
+            {editingType === "expense" && (
+              <div className="space-y-3 pt-2 border-t">
+                <Label className="text-base font-medium">Pagamento</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Forma</Label>
+                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_METHODS.map((p) => (
+                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {paymentMethod === "credit_card" && (
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Forma</Label>
-                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Label className="text-xs text-muted-foreground">Cartão</Label>
+                      <Select value={creditCardId} onValueChange={setCreditCardId}>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         <SelectContent>
-                          {PAYMENT_METHODS.map((p) => (
-                            <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                          {cards.length === 0 && <SelectItem value="none" disabled>Nenhum cartão</SelectItem>}
+                          {cards.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    {paymentMethod === "credit_card" && (
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Cartão</Label>
-                        <Select value={creditCardId} onValueChange={setCreditCardId}>
-                          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                          <SelectContent>
-                            {cards.length === 0 && <SelectItem value="none" disabled>Nenhum cartão</SelectItem>}
-                            {cards.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
-
-                  {paymentMethod === "credit_card" && (
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Parcelas</Label>
-                      <div className="flex items-center gap-2">
-                        <Input type="number" min="1" max="36" value={installments} onChange={(e) => setInstallments(e.target.value)} className="w-24" />
-                        <span className="text-sm text-muted-foreground">
-                          x de R$ {(Number(amount) / (parseInt(installments) || 1)).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
                   )}
                 </div>
-              )}
 
-              <div className="space-y-2 pt-2 border-t">
-                <Label>Descrição (opcional)</Label>
-                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Detalhes adicionais" />
+                {paymentMethod === "credit_card" && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Parcelas</Label>
+                    <div className="flex items-center gap-2">
+                      <Input type="number" min="1" max="36" value={installments} onChange={(e) => setInstallments(e.target.value)} className="w-24" />
+                      <span className="text-sm text-muted-foreground">
+                        x de R$ {(Number(amount) / (parseInt(installments) || 1)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
+            )}
 
-              {!editingId && editingType === "expense" && (
-                <div className="rounded-lg border p-3 bg-muted/30 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Switch checked={isRecurring} onCheckedChange={setIsRecurring} id="recurring-switch" />
-                    <Label htmlFor="recurring-switch" className="cursor-pointer">Repetir mensalmente?</Label>
-                  </div>
-
-                  {isRecurring && (
-                    <div className="space-y-2 animate-accordion-down">
-                      <Label>Dia do Vencimento (mensal)</Label>
-                      <Input type="number" min="1" max="31" value={recurrenceDay} onChange={(e) => setRecurrenceDay(e.target.value)} />
-                      <p className="text-xs text-muted-foreground">
-                        Será criada uma regra na aba "Recorrentes" para gerar essa despesa todo mês.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <Button onClick={handleSave} disabled={saving} className="w-full">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                {editingId ? "Atualizar" : "Salvar"}
-              </Button>
+            <div className="space-y-2 pt-2 border-t">
+              <Label>Descrição (opcional)</Label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Detalhes adicionais" />
             </div>
-          </DialogContent>
-        </Dialog>
 
-        {/* Edit confirmation for installment expenses */}
-        <AlertDialog open={!!editConfirmExpense} onOpenChange={(v) => { if (!v) setEditConfirmExpense(null); }}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Editar despesa parcelada</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta despesa possui {editConfirmExpense?.installments} parcelas. A edição afetará a despesa e <strong>todas as parcelas</strong> serão recalculadas. Deseja continuar?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => {
-                const exp = editConfirmExpense;
-                setEditConfirmExpense(null);
-                openEditExpense(exp);
-              }}>
-                Editar despesa completa
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            {!editingId && editingType === "expense" && (
+              <div className="rounded-lg border p-3 bg-muted/30 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Switch checked={isRecurring} onCheckedChange={setIsRecurring} id="recurring-switch" />
+                  <Label htmlFor="recurring-switch" className="cursor-pointer">Repetir mensalmente?</Label>
+                </div>
 
-        {/* Delete confirmation for installment expenses */}
-        <AlertDialog open={!!deleteConfirmExpense} onOpenChange={(v) => { if (!v) setDeleteConfirmExpense(null); }}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir despesa parcelada?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta despesa possui {deleteConfirmExpense?.installments} parcelas. Ao excluir, <strong>todas as parcelas</strong> serão removidas. Essa ação não pode ser desfeita. Deseja continuar?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  const id = deleteConfirmExpense?.id;
-                  setDeleteConfirmExpense(null);
-                  if (id) deleteExpenseMutation.mutate(id);
-                }}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Excluir todas as parcelas
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+                {isRecurring && (
+                  <div className="space-y-2 animate-accordion-down">
+                    <Label>Dia do Vencimento (mensal)</Label>
+                    <Input type="number" min="1" max="31" value={recurrenceDay} onChange={(e) => setRecurrenceDay(e.target.value)} />
+                    <p className="text-xs text-muted-foreground">
+                      Será criada uma regra na aba "Recorrentes" para gerar essa despesa todo mês.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
-      <div className="text-sm text-muted-foreground">
-        Exibindo competência: <strong>{format(cycleStart, "dd/MM")}</strong> até{" "}
-        <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong>
-      </div>
+            <Button onClick={handleSave} disabled={saving} className="w-full">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              {editingId ? "Atualizar" : "Salvar"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="all">Todas</TabsTrigger>
-          <TabsTrigger value="mine">Minhas</TabsTrigger>
-          <TabsTrigger value="collective">Coletivas</TabsTrigger>
-          <TabsTrigger value="recurring" className="gap-2">
-            <RefreshCw className="h-3 w-3" /> Recorrentes
-          </TabsTrigger>
-        </TabsList>
+      <AlertDialog open={!!editConfirmExpense} onOpenChange={(v) => { if (!v) setEditConfirmExpense(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Editar despesa parcelada</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta despesa possui {editConfirmExpense?.installments} parcelas. A edição afetará a despesa e <strong>todas as parcelas</strong> serão recalculadas. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              const exp = editConfirmExpense;
+              setEditConfirmExpense(null);
+              openEditExpense(exp);
+            }}>
+              Editar despesa completa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-        <TabsContent value="all" className="space-y-3 mt-4">
-          {filteredAll.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa encontrada nesta competência.</p>}
-          {filteredAll.map((e: any) => (
-            <ExpenseCard
-              key={e.id}
-              expense={e}
-              userId={user?.id}
-              isAdmin={isAdmin}
-              cards={cards}
-              onEdit={() => handleEditClick(e)}
-              onDelete={() => handleDeleteClick(e)}
-            />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="mine" className="space-y-3 mt-4">
-          {filteredMine.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa individual encontrada nesta competência.</p>}
-          {filteredMine.map((e: any) => (
-            <ExpenseCard
-              key={e.id}
-              expense={e}
-              userId={user?.id}
-              isAdmin={isAdmin}
-              cards={cards}
-              onEdit={() => handleEditClick(e)}
-              onDelete={() => handleDeleteClick(e)}
-            />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="collective" className="space-y-3 mt-4">
-          {filteredCollective.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa coletiva encontrada nesta competência.</p>}
-          {filteredCollective.map((e: any) => (
-            <ExpenseCard
-              key={e.id}
-              expense={e}
-              userId={user?.id}
-              isAdmin={isAdmin}
-              cards={cards}
-              onEdit={() => handleEditClick(e)}
-              onDelete={() => handleDeleteClick(e)}
-            />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="recurring" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-4">Modelos de despesas que se repetem (não dependem do filtro de mês).</p>
-          {!recurringExpenses?.length && <p className="text-center text-muted-foreground py-8">Nenhuma recorrência configurada.</p>}
-          {recurringExpenses?.map((r: any) => (
-            <RecurringCard
-              key={r.id}
-              recurring={r}
-              isAdmin={isAdmin}
-              userId={user?.id}
-              onEdit={() => openEditRecurring(r)}
-              onDelete={() => deleteRecurring.mutate(r.id)}
-            />
-          ))}
-        </TabsContent>
-      </Tabs>
+      <AlertDialog open={!!deleteConfirmExpense} onOpenChange={(v) => { if (!v) setDeleteConfirmExpense(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir despesa parcelada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta despesa possui {deleteConfirmExpense?.installments} parcelas. Ao excluir, <strong>todas as parcelas</strong> serão removidas. Essa ação não pode ser desfeita. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const id = deleteConfirmExpense?.id;
+                setDeleteConfirmExpense(null);
+                if (id) deleteExpenseMutation.mutate(id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir todas as parcelas
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -839,21 +858,21 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit, onDelete }: any)
   const displayAmount = isInstallment ? expense._installment_amount : expense.amount;
 
   return (
-    <Card>
+    <Card className="group hover:border-primary/30 transition-colors">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <p className="font-medium">{expense.title}</p>
-              <Badge variant="outline" className="text-xs">{catLabel}</Badge>
+              <p className="font-semibold text-foreground">{expense.title}</p>
+              <Badge variant="outline" className="text-[10px] h-5">{catLabel}</Badge>
               <Badge
                 variant={expense.expense_type === "collective" ? "default" : "secondary"}
-                className="text-xs"
+                className="text-[10px] h-5"
               >
                 {expense.expense_type === "collective" ? "Coletiva" : "Individual"}
               </Badge>
               {isInstallment && (
-                <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                <Badge variant="outline" className="text-[10px] h-5 border-primary/50 text-primary bg-primary/5">
                   Parcela {expense._installment_number}/{expense.installments}
                 </Badge>
               )}
@@ -863,32 +882,32 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit, onDelete }: any)
                 <Calendar className="h-3 w-3" /> {format(new Date(expense.purchase_date || expense.created_at), "dd/MM/yyyy")}
               </span>
               {expense.payment_method === "credit_card" && (
-                <span>
-                  <CreditCard className="h-3 w-3 inline mr-1" /> {cardLabel}{" "}
+                <span className="flex items-center gap-1">
+                  <CreditCard className="h-3 w-3" /> {cardLabel}{" "}
                   {expense.installments > 1 && `(${expense.installments}x)`}
                 </span>
               )}
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-lg font-bold">R$ {Number(displayAmount).toFixed(2)}</p>
+            <p className="text-lg font-bold text-foreground">R$ {Number(displayAmount).toFixed(2)}</p>
             {isInstallment && (
               <p className="text-[10px] text-muted-foreground">Total: R$ {Number(expense.amount).toFixed(2)}</p>
             )}
             {mySplit && expense.expense_type === "collective" && (
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-0">
                 Sua parte: R$ {Number(mySplit.amount).toFixed(2)}
               </Badge>
             )}
           </div>
           {canManage && (
             <div className="flex flex-col gap-1 ml-2">
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit}>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={onEdit}>
                 <Edit className="h-4 w-4" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
@@ -920,36 +939,36 @@ function RecurringCard({ recurring, isAdmin, userId, onEdit, onDelete }: any) {
   const canManage = isAdmin || recurring.created_by === userId;
 
   return (
-    <Card className="border-l-4 border-l-primary">
+    <Card className="border-l-4 border-l-primary hover:shadow-md transition-all">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <p className="font-medium">{recurring.title}</p>
-              <Badge variant="outline" className="text-xs">{catLabel}</Badge>
-              <Badge variant={recurring.expense_type === "collective" ? "default" : "secondary"} className="text-xs">
+              <p className="font-semibold text-foreground">{recurring.title}</p>
+              <Badge variant="outline" className="text-[10px] h-5">{catLabel}</Badge>
+              <Badge variant={recurring.expense_type === "collective" ? "default" : "secondary"} className="text-[10px] h-5">
                 {recurring.expense_type === "collective" ? "Coletiva" : "Individual"}
               </Badge>
-              <Badge variant={recurring.active ? "default" : "secondary"} className="text-xs">
+              <Badge variant={recurring.active ? "default" : "secondary"} className="text-[10px] h-5">
                 {recurring.active ? "Ativa" : "Pausada"}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Próximo vencimento: {format(new Date(recurring.next_due_date), "dd/MM/yyyy")}
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+              <Calendar className="h-3 w-3" /> Próximo vencimento: {format(new Date(recurring.next_due_date), "dd/MM/yyyy")}
             </p>
           </div>
-          <div className="text-right shrink-0 flex flex-col items-end gap-2">
-            <p className="text-lg font-bold">R$ {Number(recurring.amount).toFixed(2)}</p>
-            <p className="text-[10px] text-muted-foreground uppercase">Mensal</p>
+          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+            <p className="text-lg font-bold text-primary">R$ {Number(recurring.amount).toFixed(2)}</p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Mensal</p>
           </div>
           {canManage && (
-            <div className="flex items-center gap-1 mt-1">
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit}>
+            <div className="flex items-center gap-1 mt-1 ml-2">
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={onEdit}>
                 <Edit className="h-4 w-4" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>

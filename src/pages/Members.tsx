@@ -34,7 +34,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Pencil, Trash2, Shield, User, Eye, EyeOff } from "lucide-react";
+import { Loader2, Pencil, Trash2, Shield, User, Eye, EyeOff, Users, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { InfoCard, DetailItem } from "@/components/ui/insurance-card";
@@ -43,13 +43,11 @@ export default function Members() {
   const { membership, isAdmin, user } = useAuth();
   const queryClient = useQueryClient();
 
-  // State for Edit Dialog
   const [editingMember, setEditingMember] = useState<any>(null);
   const [editRole, setEditRole] = useState("morador");
   const [editPercentage, setEditPercentage] = useState("0");
   const [isEditOpen, setIsEditOpen] = useState(false);
 
-  // State for Details Dialog
   const [viewingMember, setViewingMember] = useState<any>(null);
   const [cpfValue, setCpfValue] = useState<string | null>(null);
   const [loadingCpf, setLoadingCpf] = useState(false);
@@ -57,7 +55,6 @@ export default function Members() {
   const [contactInfo, setContactInfo] = useState<{ email: string | null; phone: string | null } | null>(null);
   const [loadingContact, setLoadingContact] = useState(false);
 
-  // Fetch Group Details (to check splitting rule)
   const { data: group } = useQuery({
     queryKey: ["group-details-members", membership?.group_id],
     queryFn: async () => {
@@ -113,13 +110,11 @@ export default function Members() {
     enabled: !!membership?.group_id,
   });
 
-  // Fetch CPF when viewing member details
   useEffect(() => {
     const fetchCpf = async () => {
       if (!viewingMember) return;
       
       const isMe = viewingMember.user_id === user?.id;
-      // Only fetch if I am the user OR I am an admin
       if (!isMe && !isAdmin) {
         setCpfValue(null);
         return;
@@ -154,7 +149,6 @@ export default function Members() {
       setContactInfo(null);
       fetchCpf();
 
-      // Fetch email/phone for self or as admin
       const isMe = viewingMember.user_id === user?.id;
       if (isMe || isAdmin) {
         setLoadingContact(true);
@@ -236,10 +230,6 @@ export default function Members() {
     setIsEditOpen(true);
   };
 
-  const confirmRemove = (userId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
-  };
-
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -248,7 +238,6 @@ export default function Members() {
     );
   }
 
-  // --- Construct InfoCard Props ---
   const memberDetails: DetailItem[] = viewingMember ? [
     { label: "Membro desde", value: format(new Date(viewingMember.joined_at), "dd/MM/yyyy", { locale: ptBR }) },
     { label: "Status", value: "Ativo" },
@@ -277,14 +266,25 @@ export default function Members() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif">Moradores</h1>
-        <p className="text-muted-foreground mt-1">
-          {members?.length ?? 0} membro(s) ativo(s)
-        </p>
+      <div className="-mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 overflow-hidden">
+        <div className="bg-indigo-500/10 border-b border-indigo-500/20 px-4 md:px-8 py-8 md:py-10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-serif text-foreground">Moradores</h1>
+              <p className="text-muted-foreground font-medium">Equipe e gestão de acesso da república</p>
+            </div>
+
+            <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm border border-indigo-500/20 rounded-lg px-4 h-10 shadow-sm">
+              <Users className="h-4 w-4 text-indigo-500" />
+              <span className="text-sm font-bold text-indigo-700">{members?.length ?? 0} membro(s) ativo(s)</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="px-1 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {members?.map((m) => {
           const displayName = m.profile?.full_name?.trim() || "Morador sem nome";
           const initials = displayName
@@ -298,34 +298,35 @@ export default function Members() {
           return (
             <Card 
               key={m.user_id} 
-              className="cursor-pointer hover:border-primary/50 transition-colors group"
+              className="cursor-pointer hover:border-indigo-500/50 transition-all hover:shadow-md group"
               onClick={() => setViewingMember(m)}
             >
-              <CardContent className="p-4">
+              <CardContent className="p-5">
                 <div className="flex items-center gap-4">
-                  <Avatar className="h-11 w-11">
+                  <Avatar className="h-12 w-12 border-2 border-background shadow-sm group-hover:border-indigo-500/30 transition-colors">
                     <AvatarImage src={m.profile?.avatar_url} />
-                    <AvatarFallback>{initials}</AvatarFallback>
+                    <AvatarFallback className="bg-indigo-50">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">
+                    <p className="font-semibold truncate text-foreground">
                       {displayName} {isMe && "(Você)"}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold mt-1">
                       {m.role === "admin" ? (
-                        <span className="flex items-center gap-1 text-primary font-medium">
+                        <span className="flex items-center gap-1 text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
                           <Shield className="h-3 w-3" /> Admin
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                           <User className="h-3 w-3" /> Morador
                         </span>
                       )}
                       {group?.splitting_rule === "percentage" && (
-                        <span>• {m.split_percentage}%</span>
+                        <span className="text-muted-foreground">• {m.split_percentage}%</span>
                       )}
                     </div>
                   </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
                 </div>
 
                 {isAdmin && (
@@ -333,7 +334,7 @@ export default function Members() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 px-2 text-muted-foreground hover:text-primary"
+                      className="h-8 px-2 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50"
                       onClick={(e) => openEditDialog(m, e)}
                     >
                       <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar
@@ -344,8 +345,8 @@ export default function Members() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 px-2 text-muted-foreground hover:text-destructive"
-                          onClick={(e) => confirmRemove(m.user_id, e)}
+                          className="h-8 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Remover
                         </Button>
@@ -379,12 +380,10 @@ export default function Members() {
         })}
       </div>
 
-      {/* Edit Role/Percentage Modal */}
+      {/* Modals... */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Morador</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Editar Morador</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Função</Label>
@@ -413,7 +412,6 @@ export default function Members() {
         </DialogContent>
       </Dialog>
 
-      {/* View Details Modal with InfoCard */}
       <Dialog open={!!viewingMember} onOpenChange={(open) => !open && setViewingMember(null)}>
         <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-transparent border-0 shadow-none">
           {viewingMember && (
