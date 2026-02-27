@@ -5,17 +5,11 @@ import { NotificationBell } from "./NotificationBell";
 import { UserMenu } from "./UserMenu";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { Button } from "@/components/ui/button";
-import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   LayoutDashboard,
   Users,
@@ -31,6 +25,8 @@ import {
   Vote,
   Wallet,
   ChevronDown,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -125,10 +121,14 @@ export function AppLayout() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden shrink-0 h-12 w-12"
+            className="md:hidden shrink-0 h-14 w-14"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            <MenuToggleIcon open={mobileMenuOpen} className="h-8 w-8" />
+            {mobileMenuOpen ? (
+              <X className="h-10 w-10" />
+            ) : (
+              <Menu className="h-10 w-10" />
+            )}
             <span className="sr-only">Menu</span>
           </Button>
 

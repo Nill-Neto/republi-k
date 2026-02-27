@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* Professional Light Theme with Vivid Accents */
+    /* Professional Light Theme */
     
     /* Main Background: Very light cool gray/blue tint for depth */
     --background: 210 40% 98%;
@@ -32,8 +32,8 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215 16% 47%;
 
-    /* Accent: Standard Hover State (Changed from Teal to Subtle Slate) */
-    --accent: 210 40% 96.1%;
+    /* Accent: Neutral Gray for Hover States (Removed colored tint) */
+    --accent: 220 14% 96%;
     --accent-foreground: 222 47% 11%;
 
     /* Destructive: Clear Red */
@@ -89,8 +89,8 @@
     --muted: 217 33% 17%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    /* Accent: Standard Hover State (Changed from Teal to Subtle Dark Blue) */
-    --accent: 217 33% 17%;
+    /* Accent: Dark Navy for Hover States (Matches theme) */
+    --accent: 217 33% 22%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
