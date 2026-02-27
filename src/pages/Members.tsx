@@ -209,13 +209,13 @@ export default function Members() {
 
   const removeMember = useMutation({
     mutationFn: async ({ userId, reason }: { userId: string; reason: string }) => {
-      const { data, error } = await supabase.rpc("remove_group_member", {
+      const { data, error } = await supabase.rpc("remove_group_member" as any, {
         _group_id: membership!.group_id,
         _target_user_id: userId,
         _reason: reason,
-      });
+      } as any);
       if (error) throw error;
-      return data as {
+      return data as unknown as {
         success: boolean;
         preserved_pending_splits?: number;
         redistributed_pending_splits?: number;

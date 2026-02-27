@@ -1151,6 +1151,10 @@ export type Database = {
         Returns: boolean
       }
       read_my_cpf: { Args: never; Returns: string }
+      remove_group_member: {
+        Args: { _group_id: string; _reason?: string; _target_user_id: string }
+        Returns: Json
+      }
       user_has_split_on_expense: {
         Args: { _expense_id: string; _user_id: string }
         Returns: boolean
