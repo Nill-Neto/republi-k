@@ -198,7 +198,7 @@ export function AppLayout() {
         {mobileMenuOpen && (
           <>
             <div 
-              className="absolute inset-0 z-30 md:hidden" 
+              className="absolute inset-0 z-30 md:hidden bg-black/50 backdrop-blur-sm" 
               onClick={() => setMobileMenuOpen(false)}
             />
             <div className="absolute top-0 left-0 bottom-0 z-40 w-64 md:hidden bg-sidebar text-sidebar-foreground shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-300 border-r border-sidebar-border">
