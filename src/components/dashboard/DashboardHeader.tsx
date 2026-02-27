@@ -4,8 +4,6 @@ import { Plus, CalendarClock, Calendar, ChevronLeft, ChevronRight, Sparkles } fr
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 
 interface DashboardHeaderProps {
   userName: string | undefined;
@@ -59,32 +57,8 @@ export function DashboardHeader({
             </Button>
           </div>
           
-          <Button className="relative h-11 gap-2 overflow-hidden px-6 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]" asChild>
+          <Button className="gap-2 h-11 px-6 shadow-md shadow-primary/10" asChild>
             <Link to="/expenses">
-              <div
-                className={cn(
-                  "absolute inset-0 pointer-events-none rounded-[inherit] border-2 border-transparent border-inset [mask-clip:padding-box,border-box]",
-                  "[mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]"
-                )}
-              >
-                <motion.div
-                  className={cn(
-                    "absolute aspect-square bg-gradient-to-r from-transparent via-white/40 to-white/40"
-                  )}
-                  animate={{
-                    offsetDistance: ["0%", "100%"],
-                  }}
-                  style={{
-                    width: 20,
-                    offsetPath: `rect(0 auto auto 0 round 10px)`,
-                  }}
-                  transition={{
-                    repeat: Number.POSITIVE_INFINITY,
-                    duration: 4,
-                    ease: "linear",
-                  }}
-                />
-              </div>
               <Plus className="h-5 w-5" /> <span className="font-bold">Nova Despesa</span>
             </Link>
           </Button>
