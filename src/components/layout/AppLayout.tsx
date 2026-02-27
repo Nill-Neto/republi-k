@@ -12,11 +12,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   LayoutDashboard,
   Users,
   UserPlus,
@@ -33,6 +28,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 const mainNavGroups = [
   {
@@ -144,28 +140,38 @@ export function AppLayout() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
-          <div className="hidden md:flex items-center gap-1 border-r pr-2">
+          <div className="hidden md:flex items-center gap-1 border-r pr-4 mr-2">
             {convenienceItems.map((item) => {
               const isActive = location.pathname === item.to;
               return (
-                <Tooltip key={item.to}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={isActive ? "secondary" : "ghost"}
-                      size="icon"
-                      className={cn("h-9 w-9", isActive && "text-primary")}
-                      asChild
+                <Link key={item.to} to={item.to}>
+                  <motion.div
+                    className={cn(
+                      "flex items-center rounded-full transition-colors duration-200 h-9 px-3 relative",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "bg-transparent text-muted-foreground hover:bg-muted"
+                    )}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <item.icon size={18} strokeWidth={2} />
+                    
+                    <motion.div
+                      initial={false}
+                      animate={{
+                        width: isActive ? "auto" : 0,
+                        opacity: isActive ? 1 : 0,
+                        marginLeft: isActive ? 8 : 0,
+                      }}
+                      className="overflow-hidden flex items-center"
                     >
-                      <Link to={item.to}>
-                        <item.icon className="h-4 w-4" />
-                        <span className="sr-only">{item.label}</span>
-                      </Link>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{item.label}</p>
-                  </TooltipContent>
-                </Tooltip>
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {item.label}
+                      </span>
+                    </motion.div>
+                  </motion.div>
+                </Link>
               );
             })}
           </div>
