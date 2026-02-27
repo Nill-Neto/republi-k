@@ -36,7 +36,6 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  Receipt,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -533,30 +532,24 @@ export default function Expenses() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-             <div className="p-1.5 rounded-md bg-primary/10 text-primary">
-                <Receipt size={16} />
-             </div>
-             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Gestão de Gastos</span>
-          </div>
-          <h1 className="text-4xl font-serif text-foreground">Despesas</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Lançamentos e controle financeiro do grupo.</p>
+          <h1 className="text-3xl font-serif">Despesas</h1>
+          <p className="text-muted-foreground mt-1">Gestão financeira do grupo</p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm border-2 border-primary/5 rounded-xl p-1 shadow-sm">
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={prevMonth}>
+          <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="px-2 text-sm font-bold min-w-[150px] text-center capitalize text-primary">
+            <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
               {format(currentDate, "MMMM yyyy", { locale: ptBR })}
             </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={nextMonth}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextMonth}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
 
-          <Button className="gap-2 h-11 px-6 shadow-md shadow-primary/10" onClick={() => { resetForm(); setOpen(true); }}>
+          <Button className="gap-2 h-10" onClick={() => { resetForm(); setOpen(true); }}>
             <Plus className="h-4 w-4" /> Nova Despesa
           </Button>
         </div>
@@ -757,18 +750,17 @@ export default function Expenses() {
         </AlertDialog>
       </div>
 
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 bg-muted/40 w-fit px-3 py-1 rounded-full">
-        <Calendar size={12} className="text-primary" />
-        Competência: <span className="text-foreground">{format(cycleStart, "dd/MM")}</span> até{" "}
-        <span className="text-foreground">{format(subDays(cycleEnd, 1), "dd/MM")}</span>
+      <div className="text-sm text-muted-foreground">
+        Exibindo competência: <strong>{format(cycleStart, "dd/MM")}</strong> até{" "}
+        <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-b rounded-none h-auto p-0 gap-6">
-          <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">Todas</TabsTrigger>
-          <TabsTrigger value="mine" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">Minhas</TabsTrigger>
-          <TabsTrigger value="collective" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">Coletivas</TabsTrigger>
-          <TabsTrigger value="recurring" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary gap-2">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="all">Todas</TabsTrigger>
+          <TabsTrigger value="mine">Minhas</TabsTrigger>
+          <TabsTrigger value="collective">Coletivas</TabsTrigger>
+          <TabsTrigger value="recurring" className="gap-2">
             <RefreshCw className="h-3 w-3" /> Recorrentes
           </TabsTrigger>
         </TabsList>
@@ -847,57 +839,57 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit, onDelete }: any)
   const displayAmount = isInstallment ? expense._installment_amount : expense.amount;
 
   return (
-    <Card className="group transition-all hover:shadow-md border-l-4 border-l-primary/10 hover:border-l-primary">
+    <Card>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <p className="font-bold text-foreground group-hover:text-primary transition-colors">{expense.title}</p>
-              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter h-5 bg-muted/30">{catLabel}</Badge>
+              <p className="font-medium">{expense.title}</p>
+              <Badge variant="outline" className="text-xs">{catLabel}</Badge>
               <Badge
                 variant={expense.expense_type === "collective" ? "default" : "secondary"}
-                className="text-[10px] h-5"
+                className="text-xs"
               >
                 {expense.expense_type === "collective" ? "Coletiva" : "Individual"}
               </Badge>
               {isInstallment && (
-                <Badge variant="outline" className="text-[10px] h-5 border-primary/50 text-primary bg-primary/5">
+                <Badge variant="outline" className="text-xs border-primary/50 text-primary">
                   Parcela {expense._installment_number}/{expense.installments}
                 </Badge>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground font-medium mt-2">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-2">
               <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3 text-primary/60" /> {format(new Date(expense.purchase_date || expense.created_at), "dd/MM/yyyy")}
+                <Calendar className="h-3 w-3" /> {format(new Date(expense.purchase_date || expense.created_at), "dd/MM/yyyy")}
               </span>
               {expense.payment_method === "credit_card" && (
-                <span className="flex items-center gap-1">
-                  <CreditCard className="h-3 w-3 text-primary/60" /> {cardLabel}{" "}
+                <span>
+                  <CreditCard className="h-3 w-3 inline mr-1" /> {cardLabel}{" "}
                   {expense.installments > 1 && `(${expense.installments}x)`}
                 </span>
               )}
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-xl font-black text-foreground">R$ {Number(displayAmount).toFixed(2)}</p>
+            <p className="text-lg font-bold">R$ {Number(displayAmount).toFixed(2)}</p>
             {isInstallment && (
-              <p className="text-[10px] text-muted-foreground font-bold">Total: R$ {Number(expense.amount).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Total: R$ {Number(expense.amount).toFixed(2)}</p>
             )}
             {mySplit && expense.expense_type === "collective" && (
-              <Badge variant="secondary" className="text-[10px] mt-1 font-bold">
+              <Badge variant="secondary" className="text-[10px]">
                 Sua parte: R$ {Number(mySplit.amount).toFixed(2)}
               </Badge>
             )}
           </div>
           {canManage && (
-            <div className="flex flex-col gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={onEdit}>
-                <Edit className="h-3.5 w-3.5" />
+            <div className="flex flex-col gap-1 ml-2">
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit}>
+                <Edit className="h-4 w-4" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/10">
-                    <Trash2 className="h-3.5 w-3.5" />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -928,37 +920,37 @@ function RecurringCard({ recurring, isAdmin, userId, onEdit, onDelete }: any) {
   const canManage = isAdmin || recurring.created_by === userId;
 
   return (
-    <Card className="border-l-4 border-l-primary/60 group hover:border-l-primary transition-all">
+    <Card className="border-l-4 border-l-primary">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <p className="font-bold text-foreground">{recurring.title}</p>
-              <Badge variant="outline" className="text-[10px] h-5 uppercase font-bold">{catLabel}</Badge>
-              <Badge variant={recurring.expense_type === "collective" ? "default" : "secondary"} className="text-[10px] h-5">
+              <p className="font-medium">{recurring.title}</p>
+              <Badge variant="outline" className="text-xs">{catLabel}</Badge>
+              <Badge variant={recurring.expense_type === "collective" ? "default" : "secondary"} className="text-xs">
                 {recurring.expense_type === "collective" ? "Coletiva" : "Individual"}
               </Badge>
-              <Badge variant={recurring.active ? "default" : "secondary"} className="text-[10px] h-5">
+              <Badge variant={recurring.active ? "default" : "secondary"} className="text-xs">
                 {recurring.active ? "Ativa" : "Pausada"}
               </Badge>
             </div>
-            <p className="text-[11px] text-muted-foreground font-medium mt-1 flex items-center gap-1">
-              <Calendar size={12} /> Próximo vencimento: {format(new Date(recurring.next_due_date), "dd/MM/yyyy")}
+            <p className="text-xs text-muted-foreground mt-1">
+              Próximo vencimento: {format(new Date(recurring.next_due_date), "dd/MM/yyyy")}
             </p>
           </div>
-          <div className="text-right shrink-0 flex flex-col items-end gap-1">
-            <p className="text-xl font-black">R$ {Number(recurring.amount).toFixed(2)}</p>
-            <p className="text-[10px] font-black text-primary/60 uppercase tracking-tighter">Mensal</p>
+          <div className="text-right shrink-0 flex flex-col items-end gap-2">
+            <p className="text-lg font-bold">R$ {Number(recurring.amount).toFixed(2)}</p>
+            <p className="text-[10px] text-muted-foreground uppercase">Mensal</p>
           </div>
           {canManage && (
-            <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={onEdit}>
-                <Edit className="h-3.5 w-3.5" />
+            <div className="flex items-center gap-1 mt-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit}>
+                <Edit className="h-4 w-4" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/10">
-                    <Trash2 className="h-3.5 w-3.5" />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
