@@ -1,14 +1,11 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wallet, CreditCard, Plus, PieChart as PieChartIcon } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { CHART_COLORS, CATEGORY_COLORS } from "@/constants/categories";
-import { DonutChart, type DonutChartSegment } from "@/components/ui/donut-chart";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 interface CardsTabProps {
   totalBill: number;
@@ -27,19 +24,6 @@ export function CardsTab({
   cardsBreakdown,
   billInstallments,
 }: CardsTabProps) {
-  const [hoveredSegmentLabel, setHoveredSegmentLabel] = useState<string | null>(null);
-
-  const donutData: DonutChartSegment[] = cardsChartData.map((entry, index) => ({
-    label: entry.name,
-    value: entry.value,
-    color: CATEGORY_COLORS[entry.name] || CHART_COLORS[index % CHART_COLORS.length],
-  }));
-
-  const activeSegment = donutData.find(d => d.label === hoveredSegmentLabel);
-  const displayValue = activeSegment ? activeSegment.value : totalBill;
-  const displayLabel = activeSegment ? activeSegment.label : "Total Fatura";
-  const displayPercentage = activeSegment && totalBill > 0 ? (activeSegment.value / totalBill) * 100 : 100;
-
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="grid gap-6 md:grid-cols-3">
@@ -64,72 +48,46 @@ export function CardsTab({
             <CardTitle className="text-sm font-medium">Composição da Fatura</CardTitle>
             <PieChartIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="h-auto md:h-[280px] flex flex-col md:flex-row items-center justify-center gap-8 p-6">
-            {donutData.length > 0 ? (
-              <>
-                <div className="relative">
-                  <DonutChart
-                    data={donutData}
-                    size={220}
-                    strokeWidth={24}
-                    animationDuration={1}
-                    onSegmentHover={(segment) => setHoveredSegmentLabel(segment?.label || null)}
-                    centerContent={
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={displayLabel}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex flex-col items-center justify-center text-center p-2"
-                        >
-                          <p className="text-muted-foreground text-xs font-medium truncate max-w-[140px] uppercase tracking-wider">
-                            {displayLabel}
-                          </p>
-                          <p className="text-2xl font-bold text-foreground">
-                            R$ {displayValue.toFixed(0)}
-                          </p>
-                          {activeSegment && (
-                            <p className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full mt-1">
-                              {displayPercentage.toFixed(0)}%
-                            </p>
-                          )}
-                        </motion.div>
-                      </AnimatePresence>
-                    }
+          <CardContent className="h-[200px] flex items-center justify-center">
+            {cardsChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={cardsChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {cardsChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name] || CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    formatter={(v: number) => `R$ ${v.toFixed(2)}`}
+                    contentStyle={{ 
+                      borderRadius: "8px", 
+                      border: "1px solid #e2e8f0", 
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      fontSize: "12px"
+                    }}
+                    itemStyle={{ color: "#1e293b" }}
                   />
-                </div>
-                
-                <div className="flex flex-col space-y-2 w-full max-w-[240px] overflow-y-auto max-h-[220px] pr-2 scrollbar-thin">
-                  {donutData.map((segment) => (
-                    <div
-                      key={segment.label}
-                      className={cn(
-                        "flex items-center justify-between p-2 rounded-md transition-colors cursor-default text-sm",
-                        hoveredSegmentLabel === segment.label ? "bg-muted" : "hover:bg-muted/50"
-                      )}
-                      onMouseEnter={() => setHoveredSegmentLabel(segment.label)}
-                      onMouseLeave={() => setHoveredSegmentLabel(null)}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: segment.color }}
-                        />
-                        <span className="font-medium truncate text-muted-foreground">
-                          {segment.label}
-                        </span>
-                      </div>
-                      <span className="font-semibold tabular-nums">
-                        R$ {segment.value.toFixed(0)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
+                  <Legend 
+                    layout="vertical" 
+                    verticalAlign="middle" 
+                    align="right"
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: "12px" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             ) : (
-              <div className="flex flex-col items-center justify-center text-muted-foreground text-sm opacity-60 h-full w-full">
+              <div className="flex flex-col items-center justify-center text-muted-foreground text-sm opacity-60">
                 <CreditCard className="h-8 w-8 mb-2 opacity-20" />
                 <p>Fatura zerada neste mês</p>
               </div>
