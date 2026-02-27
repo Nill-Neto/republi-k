@@ -6,75 +6,91 @@
 
 @layer base {
   :root {
-    /* Main Background: Slightly darker and cooler to create contrast with white cards */
-    --background: 210 40% 96.5%;
+    /* Professional Light Theme with Vivid Accents */
+    
+    /* Main Background: Very light cool gray/blue tint for depth */
+    --background: 210 40% 98%;
+    /* Main Text: Deep Navy for high contrast and softer than pure black */
     --foreground: 222 47% 11%;
 
-    /* Cards: Pure white with a subtle border for separation */
+    /* Cards: Pure white to pop against the background */
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Primary: Vibrant Royal Blue */
+    /* Primary: Strong, Trustworthy Royal Blue (Vibrant) */
     --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 94%;
+    /* Secondary: Subtle cool gray for less important actions */
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 222 47% 11%;
 
-    --muted: 210 40% 94%;
+    /* Muted: For backgrounds of inputs/disabled states */
+    --muted: 210 40% 96.1%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 92%;
+    /* Accent: Standard Hover State (Changed from Teal to Subtle Slate) */
+    --accent: 210 40% 96.1%;
     --accent-foreground: 222 47% 11%;
 
+    /* Destructive: Clear Red */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    /* Warning/Success */
     --warning: 38 92% 50%;
     --warning-foreground: 38 92% 14%;
     --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 88%;
-    --input: 214.3 31.8% 88%;
+    /* Borders: Subtle to keep it clean */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
     --ring: 221 83% 53%;
 
-    --radius: 0.85rem;
+    --radius: 0.75rem; /* Slightly rounder for modern feel */
 
-    /* Sidebar: Richer Darker Navy */
-    --sidebar-background: 222 47% 10%;
+    /* Sidebar: Deep Navy for professional contrast in Light Mode */
+    --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 221 83% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 15%;
+    --sidebar-accent: 217 33% 17%; /* Lighter navy for hover */
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 15%;
+    --sidebar-border: 217 33% 17%;
     --sidebar-ring: 221 83% 53%;
   }
 
   .dark {
-    --background: 222 47% 8%;
+    /* Professional Dark Theme */
+    
+    /* Main Background: Deep rich navy (not pure black) */
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 12%;
+    /* Cards: Slightly lighter navy to separate from background */
+    --card: 217 33% 17%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 12%;
+    --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
 
+    /* Primary: Slightly lighter Royal Blue for visibility on dark */
     --primary: 217 91% 60%;
     --primary-foreground: 222 47% 11%;
 
-    --secondary: 222 47% 15%;
+    /* Secondary: Darker cool gray */
+    --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 222 47% 15%;
+    --muted: 217 33% 17%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 222 47% 15%;
+    /* Accent: Standard Hover State (Changed from Teal to Subtle Dark Blue) */
+    --accent: 217 33% 17%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -86,17 +102,18 @@
     --success: 160 55% 38%;
     --success-foreground: 0 0% 100%;
 
-    --border: 222 47% 18%;
-    --input: 222 47% 18%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
     --ring: 217 91% 60%;
 
-    --sidebar-background: 222 47% 6%;
+    /* Sidebar in Dark Mode: Matches background or slightly darker */
+    --sidebar-background: 222 47% 8%; /* Darker than main bg */
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 221 83% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 15%;
+    --sidebar-accent: 217 33% 17%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 15%;
+    --sidebar-border: 217 33% 17%;
     --sidebar-ring: 217 91% 60%;
   }
 }
@@ -111,18 +128,31 @@
     font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-    @apply tracking-tight font-bold;
+    @apply tracking-tight; /* Modern professional look */
   }
 }
 
 @layer utilities {
-  .section-card {
-    @apply bg-card border shadow-sm transition-all hover:shadow-md;
+  .font-serif {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
   }
   
-  .hero-gradient {
-    @apply bg-gradient-to-br from-primary to-blue-700;
+  /* Add a subtle gradient utility for "Life" */
+  .bg-primary-gradient {
+    @apply bg-gradient-to-r from-primary to-blue-600;
   }
+}
+
+/* View Transition Support */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }

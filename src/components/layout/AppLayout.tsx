@@ -5,13 +5,17 @@ import { NotificationBell } from "./NotificationBell";
 import { UserMenu } from "./UserMenu";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   LayoutDashboard,
   Users,
@@ -74,13 +78,22 @@ export function AppLayout() {
 
   const sidebarGroups = isAdmin ? [...mainNavGroups, adminGroup] : mainNavGroups;
 
+  const Logo = () => (
+    <Link to="/" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+        R
+      </div>
+      <span className="text-foreground">Republi-K</span>
+    </Link>
+  );
+
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className="flex items-center h-16 shrink-0 px-6 border-b border-sidebar-border bg-sidebar-accent/20">
-         <span className="text-xl font-black tracking-tighter text-sidebar-foreground">REPUBLI-K</span>
+      <div className="flex items-center h-14 shrink-0 px-4 md:hidden border-b border-sidebar-border">
+         <span className="text-lg font-bold tracking-tight text-sidebar-foreground">Republi-K</span>
       </div>
-      <div className="flex-1 overflow-y-auto py-6 px-4">
-        <nav className="space-y-8">
+      <div className="flex-1 overflow-y-auto py-4 px-3">
+        <nav className="space-y-6">
           {sidebarGroups.map((group) => (
             <CollapsibleNavGroup 
               key={group.title} 
@@ -106,76 +119,103 @@ export function AppLayout() {
 
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
+      {/* Header Superior Fixo */}
       <header className="z-50 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 px-4 md:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden shrink-0 h-10 w-10"
+            className="md:hidden shrink-0 h-12 w-12"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            <MenuToggleIcon open={mobileMenuOpen} className="h-6 w-6" />
+            <MenuToggleIcon open={mobileMenuOpen} className="h-8 w-8 scale-125" />
+            <span className="sr-only">Menu</span>
           </Button>
 
-          <Link to="/" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              R
-            </div>
-            <span className="text-foreground font-black tracking-tighter hidden sm:block">REPUBLI-K</span>
-          </Link>
+          <Logo />
 
           {membership && (
-            <div className="hidden lg:flex items-center gap-2 border-l pl-4 ml-2">
-              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold px-3 py-1">
-                {membership.group_name}
-              </Badge>
+            <div className="hidden sm:flex items-center gap-2 border-l pl-4 min-w-0">
+              <span className="text-xs font-medium text-muted-foreground/80 whitespace-nowrap">
+                Moradia:
+              </span>
+              <span className="text-sm font-semibold truncate">{membership.group_name}</span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4">
-          <div className="hidden md:flex items-center gap-1 bg-muted/40 p-1 rounded-full border">
+        <div className="flex items-center gap-2 md:gap-4 shrink-0">
+          <div className="hidden md:flex items-center gap-1 border-r pr-4 mr-2">
             {convenienceItems.map((item) => {
               const isActive = location.pathname === item.to;
               return (
                 <Link key={item.to} to={item.to}>
-                  <div className={cn(
-                    "flex items-center rounded-full transition-all duration-200 h-8 px-3 text-xs font-bold",
-                    isActive ? "bg-white text-primary shadow-sm border" : "text-muted-foreground hover:text-foreground"
-                  )}>
-                    {item.label}
-                  </div>
+                  <motion.div
+                    className={cn(
+                      "flex items-center rounded-full transition-colors duration-200 h-9 px-3 relative",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "bg-transparent text-muted-foreground hover:bg-muted"
+                    )}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <item.icon size={18} strokeWidth={2} />
+                    
+                    <motion.div
+                      initial={false}
+                      animate={{
+                        width: isActive ? "auto" : 0,
+                        opacity: isActive ? 1 : 0,
+                        marginLeft: isActive ? 8 : 0,
+                      }}
+                      className="overflow-hidden flex items-center"
+                    >
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {item.label}
+                      </span>
+                    </motion.div>
+                  </motion.div>
                 </Link>
               );
             })}
           </div>
+
           <AnimatedThemeToggler />
           <NotificationBell />
           <UserMenu />
         </div>
       </header>
 
+      {/* Conteúdo Principal (Sidebar + Main) */}
       <div className="flex flex-1 overflow-hidden relative">
-        <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex md:flex-col overflow-y-auto">
+        {/* Sidebar Desktop */}
+        <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex md:flex-col overflow-y-auto shadow-xl">
           <SidebarContent />
         </aside>
 
+        {/* Sidebar Mobile */}
         {mobileMenuOpen && (
           <>
-            <div className="absolute inset-0 z-30 md:hidden bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setMobileMenuOpen(false)} />
-            <div className="absolute top-0 left-0 bottom-0 z-40 w-64 md:hidden bg-sidebar text-sidebar-foreground shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-300">
+            <div 
+              className="absolute inset-0 z-30 md:hidden bg-black/50 backdrop-blur-sm" 
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="absolute top-0 left-0 bottom-0 z-40 w-64 md:hidden bg-sidebar text-sidebar-foreground shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-300 border-r border-sidebar-border">
               <SidebarContent />
             </div>
           </>
         )}
 
-        <main className="flex-1 overflow-y-auto bg-background relative scroll-smooth">
-          {/* Header Background Fill (The vibrant part) */}
-          <div className="absolute top-0 left-0 right-0 h-72 bg-primary/10 -z-10" />
-          <div className="absolute top-0 left-0 right-0 h-72 bg-gradient-to-b from-primary/15 via-primary/5 to-transparent -z-10" />
+        <main className="flex-1 overflow-y-auto bg-background relative">
+          {/* Brilho decorativo de fundo para o topo da página */}
+          <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-primary/[0.08] via-transparent to-transparent pointer-events-none -z-10" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/[0.03] blur-[100px] rounded-full pointer-events-none -z-10 -translate-y-1/2 translate-x-1/2" />
           
-          <div className="p-4 md:p-8 lg:p-10 max-w-7xl mx-auto w-full relative z-0">
-             <Outlet />
+          <div className="p-4 md:p-8">
+            <div className="max-w-7xl mx-auto w-full relative z-0">
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>
@@ -183,39 +223,58 @@ export function AppLayout() {
   );
 }
 
-function CollapsibleNavGroup({ title, items, location, onItemClick }: any) {
+function CollapsibleNavGroup({
+  title,
+  items,
+  location,
+  onItemClick,
+}: {
+  title: string;
+  items: { to: string; icon: any; label: string }[];
+  location: any;
+  onItemClick?: () => void;
+}) {
   const [isOpen, setIsOpen] = useState(true);
+
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between px-2">
-        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-sidebar-foreground/40">{title}</h4>
-        <button onClick={() => setIsOpen(!isOpen)} className="text-sidebar-foreground/30 hover:text-sidebar-foreground transition-colors">
-          <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen ? "rotate-0" : "-rotate-90")} />
-        </button>
-      </div>
-      {isOpen && (
-        <div className="space-y-1">
-          {items.map((item: any) => {
-            const isActive = location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={onItemClick}
-                className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-all",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]"
-                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                )}
-              >
-                <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary-foreground" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground")} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-1">
+      <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-1 hover:bg-sidebar-accent/50 rounded-md transition-colors group cursor-pointer">
+        <h4 className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/50 group-hover:text-sidebar-foreground">
+          {title}
+        </h4>
+        <ChevronDown
+          className={cn(
+            "h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200",
+            isOpen && "rotate-180"
+          )}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-1 pt-1 data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
+        {items.map((item) => {
+          const isActive = location.pathname === item.to;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={onItemClick}
+              className={cn(
+                "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all relative",
+                isActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm font-semibold"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              )}
+            >
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-1 bg-sidebar-primary rounded-r-full" />
+              )}
+              <item.icon
+                className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground")}
+              />
+              {item.label}
+            </Link>
+          );
+        })}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
