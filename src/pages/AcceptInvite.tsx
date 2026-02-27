@@ -65,7 +65,12 @@ export default function AcceptInvite() {
       setTimeout(() => navigate("/onboarding", { replace: true }), 2000);
     } catch (err: any) {
       setStatus("error");
-      setErrorMsg(err.message);
+      const message = String(err?.message || "");
+      if (message.toLowerCase().includes("débitos pendentes") || message.toLowerCase().includes("pending")) {
+        setErrorMsg("Você possui débitos pendentes neste grupo. Regularize para retornar.");
+      } else {
+        setErrorMsg(message || "Erro ao aceitar convite.");
+      }
     }
   };
 

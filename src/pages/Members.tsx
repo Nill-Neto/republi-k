@@ -57,6 +57,10 @@ export default function Members() {
   const [contactInfo, setContactInfo] = useState<{ email: string | null; phone: string | null } | null>(null);
   const [loadingContact, setLoadingContact] = useState(false);
 
+  // State for Remove flow
+  const [removeReason, setRemoveReason] = useState("");
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+
   // Fetch Group Details (to check splitting rule)
   const { data: group } = useQuery({
     queryKey: ["group-details-members", membership?.group_id],
@@ -204,24 +208,30 @@ export default function Members() {
   });
 
   const removeMember = useMutation({
-    mutationFn: async (userId: string) => {
-      const { error } = await supabase
-        .from("group_members")
-        .update({ active: false, left_at: new Date().toISOString() })
-        .eq("group_id", membership!.group_id)
-        .eq("user_id", userId);
-
+    mutationFn: async ({ userId, reason }: { userId: string; reason: string }) => {
+      const { data, error } = await supabase.rpc("remove_group_member", {
+        _group_id: membership!.group_id,
+        _target_user_id: userId,
+        _reason: reason,
+      });
       if (error) throw error;
-      
-      await supabase
-        .from("user_roles")
-        .delete()
-        .eq("group_id", membership!.group_id)
-        .eq("user_id", userId);
+      return data as {
+        success: boolean;
+        preserved_pending_splits?: number;
+        redistributed_pending_splits?: number;
+      };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      toast({ title: "Membro removido." });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["my-pending-splits"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      setRemoveReason("");
+      setRemovingMemberId(null);
+      toast({
+        title: "Morador removido.",
+        description: `Pendências preservadas: ${result?.preserved_pending_splits ?? 0} | redistribuídas: ${result?.redistributed_pending_splits ?? 0}`,
+      });
     },
     onError: (err: any) => {
       toast({ title: "Erro ao remover", description: err.message, variant: "destructive" });
@@ -238,6 +248,8 @@ export default function Members() {
 
   const confirmRemove = (userId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
+    setRemovingMemberId(userId);
+    setRemoveReason("");
   };
 
   if (isLoading) {
@@ -346,6 +358,7 @@ export default function Members() {
                           size="sm"
                           className="h-8 px-2 text-muted-foreground hover:text-destructive"
                           onClick={(e) => confirmRemove(m.user_id, e)}
+                          disabled={isMe}
                         >
                           <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Remover
                         </Button>
@@ -354,20 +367,38 @@ export default function Members() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Remover morador?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            {isMe 
-                              ? "Atenção: Você está removendo a si mesmo do grupo. Você perderá o acesso imediatamente."
-                              : <>Tem certeza que deseja remover <strong>{m.profile?.full_name}</strong>?</>
+                            {isMe
+                              ? "Você não pode remover a si mesmo por este fluxo. Use o fluxo de saída dedicado."
+                              : <>Tem certeza que deseja remover <strong>{m.profile?.full_name}</strong>? Essa ação impacta os cálculos financeiros do grupo.</>
                             }
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => removeMember.mutate(m.user_id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Remover
-                          </AlertDialogAction>
+                          <div className="w-full space-y-3">
+                            <div className="space-y-1">
+                              <Label htmlFor={`remove-reason-${m.user_id}`}>Motivo da saída</Label>
+                              <Input
+                                id={`remove-reason-${m.user_id}`}
+                                placeholder="Ex.: mudança de cidade"
+                                value={removingMemberId === m.user_id ? removeReason : ""}
+                                onChange={(e) => setRemoveReason(e.target.value)}
+                              />
+                            </div>
+                            <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
+                              <p>• Débitos do período utilizado permanecem com o morador.</p>
+                              <p>• Pendências futuras poderão ser redistribuídas conforme regras do grupo.</p>
+                              <p>• Pagamentos já enviados permanecem pendentes até confirmação.</p>
+                            </div>
+                            <AlertDialogAction
+                              onClick={() => removeMember.mutate({ userId: m.user_id, reason: removeReason.trim() })}
+                              disabled={removeMember.isPending || removingMemberId !== m.user_id || !removeReason.trim()}
+                              className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              {removeMember.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                              Confirmar saída
+                            </AlertDialogAction>
+                          </div>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
