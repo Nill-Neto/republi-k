@@ -80,7 +80,7 @@ export function AppLayout() {
 
   const Logo = () => (
     <Link to="/" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-primary/20">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
         R
       </div>
       <span className="text-foreground">Republi-K</span>
@@ -207,11 +207,8 @@ export function AppLayout() {
           </>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-background relative scroll-smooth">
-          {/* Top Decorative wash */}
-          <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent -z-10 pointer-events-none" />
-          
-          <div className="max-w-7xl mx-auto w-full relative">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-background relative">
+          <div className="max-w-7xl mx-auto w-full">
             <Outlet />
           </div>
         </main>
