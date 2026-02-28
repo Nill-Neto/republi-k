@@ -134,14 +134,27 @@ export default function Dashboard() {
     queryFn: async () => {
       if (!isAdmin || !membership?.group_id) return null;
 
-      const [membersRes, balancesRes, pendingPaymentsRes, rolesRes] = await Promise.all([
+      const [membersRes, balancesRes, pendingPaymentsRes, rolesRes, pendingCollectiveSplitsRes, departuresRes] = await Promise.all([
         supabase.from("group_members").select("user_id, active").eq("group_id", membership.group_id).eq("active", true),
         supabase.rpc("get_member_balances", { _group_id: membership.group_id }),
         supabase.from("payments")
           .select("id, expense_split_id, expense_splits(expenses(expense_type))")
           .eq("group_id", membership.group_id)
           .eq("status", "pending"),
-        supabase.from("user_roles").select("user_id, role").eq("group_id", membership.group_id)
+        supabase.from("user_roles").select("user_id, role").eq("group_id", membership.group_id),
+        supabase
+          .from("expense_splits")
+          .select("user_id, amount, status, expenses!inner(group_id, expense_type)")
+          .eq("status", "pending")
+          .eq("expenses.group_id", membership.group_id)
+          .eq("expenses.expense_type", "collective"),
+        supabase
+          .from("audit_log")
+          .select("created_at, details")
+          .eq("group_id", membership.group_id)
+          .eq("action", "remove_member")
+          .gte("created_at", cycleStart.toISOString())
+          .lt("created_at", cycleEnd.toISOString())
       ]);
 
       const userIds = membersRes.data?.map(m => m.user_id) ?? [];
@@ -159,10 +172,24 @@ export default function Dashboard() {
         return type === 'collective';
       }).length;
 
+      const activeUserIds = new Set(members.map((m) => m.user_id));
+      const exMembersDebt = (pendingCollectiveSplitsRes.data || [])
+        .filter((s: any) => !activeUserIds.has(s.user_id))
+        .reduce((sum: number, s: any) => sum + Number(s.amount || 0), 0);
+
+      const departuresCount = (departuresRes.data || []).length;
+      const redistributedCount = (departuresRes.data || []).reduce((sum: number, log: any) => {
+        const value = Number(log?.details?.redistributed_pending_splits || 0);
+        return sum + (Number.isFinite(value) ? value : 0);
+      }, 0);
+
       return {
         members,
         balances: balancesRes.data ?? [],
-        pendingPaymentsCount: pendingCollectiveCount
+        pendingPaymentsCount: pendingCollectiveCount,
+        exMembersDebt,
+        departuresCount,
+        redistributedCount,
       };
     },
     enabled: !!membership?.group_id && isAdmin
@@ -366,6 +393,9 @@ export default function Dashboard() {
                 cycleStart={cycleStart}
                 cycleEnd={cycleEnd}
                 currentDate={currentDate}
+                exMembersDebt={adminData.exMembersDebt}
+                departuresCount={adminData.departuresCount}
+                redistributedCount={adminData.redistributedCount}
               />
             ) : (
               <div className="py-12 text-center text-muted-foreground">Carregando dados administrativos...</div>

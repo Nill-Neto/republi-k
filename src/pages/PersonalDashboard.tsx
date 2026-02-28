@@ -122,7 +122,6 @@ export default function PersonalDashboard() {
       <PageHero
         title="Meu Financeiro"
         subtitle="Gastos individuais e faturas."
-        tone="primary"
         icon={<CreditCard className="h-4 w-4" />}
         actions={
           <div className="flex flex-wrap gap-2">

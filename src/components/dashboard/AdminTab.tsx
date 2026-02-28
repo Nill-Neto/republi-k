@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import {
   Users, ArrowRight, RefreshCw, DollarSign, AlertTriangle,
   TrendingUp, Receipt, Settings, ClipboardList, BarChart3,
-  CheckCircle2, Clock, ChevronRight, FileText, UserPlus, Scale,
+  CheckCircle2, Clock, ChevronRight, FileText, UserPlus, Scale, UserMinus,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -24,6 +24,9 @@ interface AdminTabProps {
   cycleStart: Date;
   cycleEnd: Date;
   currentDate: Date;
+  exMembersDebt: number;
+  departuresCount: number;
+  redistributedCount: number;
 }
 
 export function AdminTab({
@@ -35,6 +38,9 @@ export function AdminTab({
   cycleStart,
   cycleEnd,
   currentDate,
+  exMembersDebt,
+  departuresCount,
+  redistributedCount,
 }: AdminTabProps) {
   const queryClient = useQueryClient();
 
@@ -186,6 +192,50 @@ export function AdminTab({
             <p className="text-xs text-muted-foreground mt-1">
               {members.length - membersInDebt.length}/{members.length} em dia
             </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Movimentações de Moradores */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Ex-moradores com débito
+            </CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold tabular-nums ${exMembersDebt > 0 ? "text-destructive" : "text-foreground"}`}>
+              R$ {exMembersDebt.toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Pendências abertas fora dos ativos</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Redistribuições no ciclo
+            </CardTitle>
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold tabular-nums">{redistributedCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Splits redistribuídos por saídas</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Saídas no período
+            </CardTitle>
+            <UserMinus className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold tabular-nums">{departuresCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Eventos auditados de remoção</p>
           </CardContent>
         </Card>
       </div>

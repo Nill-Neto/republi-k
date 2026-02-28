@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Save, SlidersHorizontal } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
 
 export default function GroupSettings() {
