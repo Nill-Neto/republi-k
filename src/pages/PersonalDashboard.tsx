@@ -82,13 +82,25 @@ export default function PersonalDashboard() {
     enabled: !!user,
   });
 
-  // 4. Fetch shared pending
+  // 4. Fetch group closing_day
+  const { data: groupSettings } = useQuery({
+    queryKey: ["group-settings-cycle", membership?.group_id],
+    queryFn: async () => {
+      const { data } = await supabase.from("groups").select("closing_day, due_day").eq("id", membership!.group_id).single();
+      return data;
+    },
+    enabled: !!membership?.group_id,
+  });
+
+  const groupClosingDay = groupSettings?.closing_day || 1;
+
+  // 5. Fetch shared pending with expense purchase_date
   const { data: sharedPending = [] } = useQuery({
     queryKey: ["my-shared-pending", user?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("expense_splits")
-        .select("amount")
+        .select("amount, expense_id, expenses!inner(purchase_date, title)")
         .eq("user_id", user!.id)
         .eq("status", "pending");
       return (data as any[]) ?? [];
@@ -96,9 +108,52 @@ export default function PersonalDashboard() {
     enabled: !!user,
   });
 
+  // Determine current cycle boundaries based on group closing_day
+  const getCycleForDate = (date: Date) => {
+    const d = date.getDate();
+    let m = date.getMonth() + 1;
+    let y = date.getFullYear();
+    if (d >= groupClosingDay) {
+      m++;
+      if (m > 12) { m = 1; y++; }
+    }
+    return { month: m, year: y };
+  };
+
+  const currentCycle = getCycleForDate(now);
+
+  // Split pending into current cycle vs previous
+  const previousPending: { month: number; year: number; amount: number; title: string }[] = [];
+  const currentPending: typeof previousPending = [];
+
+  sharedPending.forEach((s: any) => {
+    const purchaseDate = new Date(s.expenses?.purchase_date);
+    const cycle = getCycleForDate(purchaseDate);
+    const entry = { month: cycle.month, year: cycle.year, amount: Number(s.amount), title: s.expenses?.title || "" };
+
+    if (cycle.year < currentCycle.year || (cycle.year === currentCycle.year && cycle.month < currentCycle.month)) {
+      previousPending.push(entry);
+    } else if (cycle.year === currentCycle.year && cycle.month === currentCycle.month) {
+      currentPending.push(entry);
+    }
+    // Future cycles are ignored
+  });
+
+  const totalPreviousPending = previousPending.reduce((s, i) => s + i.amount, 0);
+  const totalCurrentPending = currentPending.reduce((s, i) => s + i.amount, 0);
+
+  // Group previous pending by competency for modal
+  const previousByCompetency = previousPending.reduce<Record<string, { label: string; total: number; items: { title: string; amount: number }[] }>>((acc, item) => {
+    const key = `${item.year}-${String(item.month).padStart(2, "0")}`;
+    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    if (!acc[key]) acc[key] = { label: `${monthNames[item.month - 1]}/${item.year}`, total: 0, items: [] };
+    acc[key].total += item.amount;
+    acc[key].items.push({ title: item.title, amount: item.amount });
+    return acc;
+  }, {});
+
   const totalBill = openBillItems.reduce((sum, i) => sum + Number(i.amount), 0);
   const totalPersonalCash = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-  const totalShared = sharedPending.reduce((sum, s) => sum + Number(s.amount), 0);
   
   // Total spending graph (Cash + Bill)
   const totalSpending = totalPersonalCash + totalBill;
