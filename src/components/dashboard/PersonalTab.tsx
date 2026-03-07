@@ -20,6 +20,12 @@ interface PersonalTabProps {
   totalIndividualPending: number;
   totalCollectivePendingPrevious: number;
   totalCollectivePendingCurrent: number;
+  collectivePendingPreviousByCompetence: {
+    competence: string;
+    total: number;
+    items: any[];
+  }[];
+  collectivePendingCurrent: any[];
   individualPending: any[];
   totalPersonalCash: number;
   totalBill: number;
@@ -33,6 +39,8 @@ export function PersonalTab({
   totalIndividualPending,
   totalCollectivePendingPrevious,
   totalCollectivePendingCurrent,
+  collectivePendingPreviousByCompetence,
+  collectivePendingCurrent,
   individualPending,
   totalPersonalCash,
   totalUserExpenses,
@@ -41,11 +49,13 @@ export function PersonalTab({
   myPersonalExpenses,
 }: PersonalTabProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isPreviousCollectiveOpen, setIsPreviousCollectiveOpen] = useState(false);
+  const [isCurrentCollectiveOpen, setIsCurrentCollectiveOpen] = useState(false);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {/* Total Comprometido (Mês) */}
         <Card className="sm:col-span-1 bg-primary text-primary-foreground border-0 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -58,11 +68,11 @@ export function PersonalTab({
           </CardContent>
         </Card>
 
-        {/* Rateio Pendente */}
+        {/* Rateio pendente (competências anteriores) */}
         <Card className={`${totalCollectivePendingPrevious > 0 ? "border-destructive/30 bg-destructive/5" : ""}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className={`text-sm font-medium ${totalCollectivePendingPrevious > 0 ? "text-destructive" : "text-muted-foreground"}`}>
-              Rateio Pendente
+              Rateio pendente (competências anteriores)
             </CardTitle>
             <Users className={`h-4 w-4 ${totalCollectivePendingPrevious > 0 ? "text-destructive" : "text-muted-foreground"}`} />
           </CardHeader>
@@ -70,15 +80,117 @@ export function PersonalTab({
             <div className={`text-2xl font-bold ${totalCollectivePendingPrevious > 0 ? "text-destructive" : ""}`}>
               R$ {totalCollectivePendingPrevious.toFixed(2)}
             </div>
-            {totalCollectivePendingCurrent > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">Competência atual: R$ {totalCollectivePendingCurrent.toFixed(2)}</p>
-            )}
             {totalCollectivePendingPrevious > 0 ? (
-              <p className="text-xs text-destructive mt-1 font-medium">Você deve isso ao grupo (competências anteriores).</p>
+              <p className="text-xs text-destructive mt-1 font-medium">Inclui apenas competências anteriores (não inclui a atual nem futuras).</p>
             ) : (
               <p className="text-xs text-success mt-1 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" /> Em dia com a casa.
+                <CheckCircle2 className="h-3 w-3" /> Sem pendências em competências anteriores.
               </p>
+            )}
+            {collectivePendingPreviousByCompetence.length > 0 && (
+              <Dialog open={isPreviousCollectiveOpen} onOpenChange={setIsPreviousCollectiveOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="link" className="h-auto p-0 mt-2 text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                    <List className="h-3 w-3" /> Ver detalhamento
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden flex flex-col max-h-[80vh]">
+                  <DialogHeader className="p-4 border-b shrink-0">
+                    <DialogTitle className="text-base font-medium flex items-center gap-2">
+                      Rateio pendente (competências anteriores)
+                      <Badge variant="outline" className="ml-auto font-normal">
+                        Total: R$ {totalCollectivePendingPrevious.toFixed(2)}
+                      </Badge>
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  <div className="flex-1 overflow-hidden">
+                    <ScrollArea className="h-full">
+                      <div className="divide-y">
+                        {collectivePendingPreviousByCompetence.map((group) => (
+                          <div key={group.competence} className="p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-semibold">Competência {group.competence}</p>
+                              <Badge variant="secondary" className="font-normal">
+                                R$ {group.total.toFixed(2)}
+                              </Badge>
+                            </div>
+
+                            <div className="space-y-2">
+                              {group.items.map((item) => (
+                                <div key={item.id} className="flex items-center justify-between rounded-md bg-muted/30 px-3 py-2">
+                                  <div className="min-w-0 pr-4">
+                                    <p className="text-xs font-medium truncate">{item.expenses?.title || "Despesa sem título"}</p>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {getCategoryLabel(item.expenses?.category)}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs font-semibold whitespace-nowrap">R$ {Number(item.amount).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Rateio em aberto (competência atual) */}
+        <Card className={`${totalCollectivePendingCurrent > 0 ? "border-amber-500/30 bg-amber-500/5" : ""}`}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className={`text-sm font-medium ${totalCollectivePendingCurrent > 0 ? "text-amber-700" : "text-muted-foreground"}`}>
+              Rateio em aberto (competência atual)
+            </CardTitle>
+            <Users className={`h-4 w-4 ${totalCollectivePendingCurrent > 0 ? "text-amber-700" : "text-muted-foreground"}`} />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${totalCollectivePendingCurrent > 0 ? "text-amber-700" : ""}`}>
+              R$ {totalCollectivePendingCurrent.toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Exibe somente itens da competência vigente.</p>
+            {collectivePendingCurrent.length > 0 && (
+              <Dialog open={isCurrentCollectiveOpen} onOpenChange={setIsCurrentCollectiveOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="link" className="h-auto p-0 mt-2 text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                    <List className="h-3 w-3" /> Ver itens atuais ({collectivePendingCurrent.length})
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden flex flex-col max-h-[80vh]">
+                  <DialogHeader className="p-4 border-b shrink-0">
+                    <DialogTitle className="text-base font-medium flex items-center gap-2">
+                      Rateio em aberto (competência atual)
+                      <Badge variant="outline" className="ml-auto font-normal">
+                        Total: R$ {totalCollectivePendingCurrent.toFixed(2)}
+                      </Badge>
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  <div className="flex-1 overflow-hidden">
+                    <ScrollArea className="h-full">
+                      <div className="divide-y">
+                        {collectivePendingCurrent.map((item) => (
+                          <div key={item.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                            <div className="min-w-0 pr-4">
+                              <p className="text-sm font-medium truncate">{item.expenses?.title || "Despesa sem título"}</p>
+                              <span className="text-[10px] text-muted-foreground">
+                                {getCategoryLabel(item.expenses?.category)}
+                              </span>
+                            </div>
+                            <span className="font-semibold text-sm tabular-nums whitespace-nowrap">
+                              R$ {Number(item.amount).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </DialogContent>
+              </Dialog>
             )}
           </CardContent>
         </Card>

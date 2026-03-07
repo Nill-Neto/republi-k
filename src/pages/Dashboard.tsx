@@ -257,6 +257,34 @@ export default function Dashboard() {
   const totalCollectivePendingCurrent = collectivePendingCurrent.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
   const totalCollectivePendingFuture = collectivePendingFuture.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
 
+  const collectivePendingPreviousByCompetence = useMemo(() => {
+    const grouped = collectivePendingPrevious.reduce((acc: Record<string, any[]>, item: any) => {
+      const purchaseDate = item.expenses?.purchase_date ? new Date(item.expenses.purchase_date) : null;
+      const competence = purchaseDate ? format(purchaseDate, "MM/yyyy") : "Sem competência";
+      if (!acc[competence]) acc[competence] = [];
+      acc[competence].push(item);
+      return acc;
+    }, {});
+
+    return Object.entries(grouped)
+      .map(([competence, items]) => ({
+        competence,
+        items,
+        total: items.reduce((sum, split) => sum + Number(split.amount), 0),
+      }))
+      .sort((a, b) => {
+        const [monthA, yearA] = a.competence.split("/").map(Number);
+        const [monthB, yearB] = b.competence.split("/").map(Number);
+
+        if (!monthA || !yearA) return 1;
+        if (!monthB || !yearB) return -1;
+
+        const dateA = new Date(yearA, monthA - 1, 1).getTime();
+        const dateB = new Date(yearB, monthB - 1, 1).getTime();
+        return dateB - dateA;
+      });
+  }, [collectivePendingPrevious]);
+
   // 2. Individual Pending (Manual + Installments)
   // A. Manual pending splits (Cash/Pix/Debit that are pending) - EXCLUDE credit card splits here as they are parcelled
   const manualIndividualPending = pendingSplits.filter((s: any) => 
@@ -435,6 +463,8 @@ export default function Dashboard() {
             totalIndividualPending={totalIndividualPending}
             totalCollectivePendingPrevious={totalCollectivePendingPrevious}
             totalCollectivePendingCurrent={totalCollectivePendingCurrent}
+            collectivePendingPreviousByCompetence={collectivePendingPreviousByCompetence}
+            collectivePendingCurrent={collectivePendingCurrent}
             individualPending={individualPending}
             totalPersonalCash={totalPersonalCash}
             totalBill={totalBill}
