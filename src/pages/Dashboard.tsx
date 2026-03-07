@@ -32,6 +32,12 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [rateioScope, setRateioScope] = useState<RateioScope>("previous");
 
+  const [activeTab, setActiveTab] = useState<string>(isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic"));
+
+  useEffect(() => {
+    setActiveTab(isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic"));
+  }, [isPersonalFinancePage, isAdmin]);
+
   // --- Group Settings & Initial Date Logic ---
   const { data: groupSettings } = useQuery({
     queryKey: ["group-settings-dashboard", membership?.group_id],
