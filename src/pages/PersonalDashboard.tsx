@@ -14,7 +14,7 @@ import { PageHero } from "@/components/layout/PageHero";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function PersonalDashboard() {
-  const { user } = useAuth();
+  const { user, membership } = useAuth();
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
