@@ -73,6 +73,7 @@ export function PersonalTab({
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className={`text-sm font-medium ${totalCollectivePendingPrevious > 0 ? "text-destructive" : "text-muted-foreground"}`}>
               Rateio pendente (competências anteriores)
+
             </CardTitle>
             <Users className={`h-4 w-4 ${totalCollectivePendingPrevious > 0 ? "text-destructive" : "text-muted-foreground"}`} />
           </CardHeader>
