@@ -1,20 +1,18 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CreditCard, Calendar, ArrowRight, AlertTriangle, Clock } from "lucide-react";
+import { CreditCard, Calendar, ArrowRight } from "lucide-react";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { Link } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { getCategoryLabel, CHART_COLORS } from "@/constants/categories";
 import { PageHero } from "@/components/layout/PageHero";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function PersonalDashboard() {
-  const { user, membership } = useAuth();
+  const { user } = useAuth();
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
@@ -82,25 +80,13 @@ export default function PersonalDashboard() {
     enabled: !!user,
   });
 
-  // 4. Fetch group closing_day
-  const { data: groupSettings } = useQuery({
-    queryKey: ["group-settings-cycle", membership?.group_id],
-    queryFn: async () => {
-      const { data } = await supabase.from("groups").select("closing_day, due_day").eq("id", membership!.group_id).single();
-      return data;
-    },
-    enabled: !!membership?.group_id,
-  });
-
-  const groupClosingDay = groupSettings?.closing_day || 1;
-
-  // 5. Fetch shared pending with expense purchase_date
+  // 4. Fetch shared pending
   const { data: sharedPending = [] } = useQuery({
     queryKey: ["my-shared-pending", user?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("expense_splits")
-        .select("amount, expense_id, expenses!inner(purchase_date, title)")
+        .select("amount")
         .eq("user_id", user!.id)
         .eq("status", "pending");
       return (data as any[]) ?? [];
@@ -108,52 +94,9 @@ export default function PersonalDashboard() {
     enabled: !!user,
   });
 
-  // Determine current cycle boundaries based on group closing_day
-  const getCycleForDate = (date: Date) => {
-    const d = date.getDate();
-    let m = date.getMonth() + 1;
-    let y = date.getFullYear();
-    if (d >= groupClosingDay) {
-      m++;
-      if (m > 12) { m = 1; y++; }
-    }
-    return { month: m, year: y };
-  };
-
-  const currentCycle = getCycleForDate(now);
-
-  // Split pending into current cycle vs previous
-  const previousPending: { month: number; year: number; amount: number; title: string }[] = [];
-  const currentPending: typeof previousPending = [];
-
-  sharedPending.forEach((s: any) => {
-    const purchaseDate = new Date(s.expenses?.purchase_date);
-    const cycle = getCycleForDate(purchaseDate);
-    const entry = { month: cycle.month, year: cycle.year, amount: Number(s.amount), title: s.expenses?.title || "" };
-
-    if (cycle.year < currentCycle.year || (cycle.year === currentCycle.year && cycle.month < currentCycle.month)) {
-      previousPending.push(entry);
-    } else if (cycle.year === currentCycle.year && cycle.month === currentCycle.month) {
-      currentPending.push(entry);
-    }
-    // Future cycles are ignored
-  });
-
-  const totalPreviousPending = previousPending.reduce((s, i) => s + i.amount, 0);
-  const totalCurrentPending = currentPending.reduce((s, i) => s + i.amount, 0);
-
-  // Group previous pending by competency for modal
-  const previousByCompetency = previousPending.reduce<Record<string, { label: string; total: number; items: { title: string; amount: number }[] }>>((acc, item) => {
-    const key = `${item.year}-${String(item.month).padStart(2, "0")}`;
-    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-    if (!acc[key]) acc[key] = { label: `${monthNames[item.month - 1]}/${item.year}`, total: 0, items: [] };
-    acc[key].total += item.amount;
-    acc[key].items.push({ title: item.title, amount: item.amount });
-    return acc;
-  }, {});
-
   const totalBill = openBillItems.reduce((sum, i) => sum + Number(i.amount), 0);
   const totalPersonalCash = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const totalShared = sharedPending.reduce((sum, s) => sum + Number(s.amount), 0);
   
   // Total spending graph (Cash + Bill)
   const totalSpending = totalPersonalCash + totalBill;
@@ -192,7 +135,7 @@ export default function PersonalDashboard() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="bg-primary text-primary-foreground">
           <CardHeader className="pb-2">
             <CardDescription className="text-primary-foreground/70">Fatura Atual (Aberta)</CardDescription>
@@ -215,63 +158,17 @@ export default function PersonalDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-muted-foreground/20">
+        <Card className="border-destructive/20 bg-destructive/5">
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-1"><Clock className="h-3 w-3" /> Rateio - Competência Atual</CardDescription>
-            <CardTitle className="text-3xl font-bold">R$ {totalCurrentPending.toFixed(2)}</CardTitle>
+            <CardDescription className="text-destructive">Rateio Coletivo Pendente</CardDescription>
+            <CardTitle className="text-3xl font-bold text-destructive">R$ {totalShared.toFixed(2)}</CardTitle>
           </CardHeader>
           <CardContent>
-             <Link to="/payments" className="text-xs font-medium text-muted-foreground hover:underline flex items-center gap-1">
+             <Link to="/payments" className="text-xs font-medium text-destructive hover:underline flex items-center gap-1">
                Ir para pagamentos <ArrowRight className="h-3 w-3" />
              </Link>
           </CardContent>
         </Card>
-
-        <Dialog>
-          <Card className={`border-destructive/20 ${totalPreviousPending > 0 ? "bg-destructive/5" : ""}`}>
-            <CardHeader className="pb-2">
-              <CardDescription className="text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Rateio Pendente (Anteriores)</CardDescription>
-              <CardTitle className="text-3xl font-bold text-destructive">R$ {totalPreviousPending.toFixed(2)}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {totalPreviousPending > 0 ? (
-                <DialogTrigger asChild>
-                  <button className="text-xs font-medium text-destructive hover:underline flex items-center gap-1">
-                    Ver detalhes <ArrowRight className="h-3 w-3" />
-                  </button>
-                </DialogTrigger>
-              ) : (
-                <p className="text-xs text-muted-foreground">Nenhum débito anterior.</p>
-              )}
-            </CardContent>
-          </Card>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Rateio Pendente — Competências Anteriores</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-              {Object.entries(previousByCompetency).sort(([a], [b]) => a.localeCompare(b)).map(([key, comp]) => (
-                <div key={key}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-sm">{comp.label}</h4>
-                    <span className="text-sm font-bold text-destructive">R$ {comp.total.toFixed(2)}</span>
-                  </div>
-                  <div className="space-y-1 pl-2 border-l-2 border-destructive/20">
-                    {comp.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-xs">
-                        <span className="text-muted-foreground truncate mr-2">{item.title}</span>
-                        <span className="shrink-0">R$ {item.amount.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {Object.keys(previousByCompetency).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">Nenhum débito de competências anteriores.</p>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
