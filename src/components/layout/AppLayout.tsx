@@ -49,6 +49,7 @@ const mainNavGroups = [
   {
     title: "Minhas Finanças",
     items: [
+      { to: "/personal/financas", icon: LayoutDashboard, label: "Finanças Pessoais" },
       { to: "/personal/bills", icon: ScrollText, label: "Faturas" },
       { to: "/personal/cards", icon: Wallet, label: "Meus Cartões" },
     ],
