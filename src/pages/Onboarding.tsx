@@ -127,7 +127,7 @@ export default function Onboarding() {
         await refreshProfile();
         toast({ title: "Bem-vindo!", description: "Seu cadastro foi concluído." });
         clearInvite();
-        navigate("/", { replace: true });
+        navigate("/dashboard", { replace: true });
       } else {
         setStep("group");
       }
