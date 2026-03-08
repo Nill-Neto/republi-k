@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, DollarSign, TrendingUp, Users, Wallet, CheckCircle2, List } from "lucide-react";
+import { AlertCircle, DollarSign, TrendingUp, Users, Wallet, CheckCircle2, List, Receipt } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -43,11 +43,14 @@ export function PersonalTab({
   collectivePendingCurrent,
   individualPending,
   totalPersonalCash,
+  totalBill,
   totalUserExpenses,
   myCollectiveShare,
   personalChartData,
   myPersonalExpenses,
 }: PersonalTabProps) {
+  const totalSpentCompetence = totalPersonalCash + totalBill + myCollectiveShare;
+
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isPreviousCollectiveOpen, setIsPreviousCollectiveOpen] = useState(false);
   const [isCurrentCollectiveOpen, setIsCurrentCollectiveOpen] = useState(false);
@@ -55,7 +58,7 @@ export function PersonalTab({
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         {/* Total Comprometido (Mês) */}
         <Card className="sm:col-span-1 bg-primary text-primary-foreground border-0 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -275,6 +278,18 @@ export function PersonalTab({
           <CardContent>
             <div className="text-2xl font-bold">R$ {totalPersonalCash.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground mt-1">Dinheiro, Pix ou Débito.</p>
+          </CardContent>
+        </Card>
+
+        {/* Total Gasto na Competência */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-primary">Total Gasto (Competência)</CardTitle>
+            <Receipt className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">R$ {totalSpentCompetence.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Rateio + À Vista + Fatura.</p>
           </CardContent>
         </Card>
       </div>
