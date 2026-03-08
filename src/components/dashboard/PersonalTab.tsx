@@ -54,6 +54,9 @@ export function PersonalTab({
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isPreviousCollectiveOpen, setIsPreviousCollectiveOpen] = useState(false);
   const [isCurrentCollectiveOpen, setIsCurrentCollectiveOpen] = useState(false);
+  const [isCashDetailOpen, setIsCashDetailOpen] = useState(false);
+
+  const cashExpenses = myPersonalExpenses.filter((e: any) => e.payment_method !== 'credit_card');
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
