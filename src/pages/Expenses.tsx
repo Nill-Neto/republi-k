@@ -867,15 +867,18 @@ export default function Expenses() {
         <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong>
       </div>
 
+      {!heroCompact && (
       <div>
-        <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="all">Todas</TabsTrigger>
-          <TabsTrigger value="mine">Minhas</TabsTrigger>
-          <TabsTrigger value="collective">Coletivas</TabsTrigger>
-          <TabsTrigger value="recurring" className="gap-2">
+        <TabsList className="w-full justify-start overflow-x-auto bg-transparent gap-2 h-auto p-0">
+          <TabsTrigger value="all" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Todas</TabsTrigger>
+          <TabsTrigger value="mine" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Minhas</TabsTrigger>
+          <TabsTrigger value="collective" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Coletivas</TabsTrigger>
+          <TabsTrigger value="recurring" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md gap-1.5">
             <RefreshCw className="h-3 w-3" /> Recorrentes
           </TabsTrigger>
         </TabsList>
+      </div>
+      )}
 
         <TabsContent value="all" className="space-y-3 mt-4">
           {filteredAll.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa encontrada nesta competência.</p>}
