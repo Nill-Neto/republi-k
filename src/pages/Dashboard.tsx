@@ -506,7 +506,7 @@ export default function Dashboard() {
   );
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8 animate-in fade-in duration-500">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 animate-in fade-in duration-500">
       <DashboardHeader 
         userName={profile?.full_name}
         groupName={membership?.group_name}
