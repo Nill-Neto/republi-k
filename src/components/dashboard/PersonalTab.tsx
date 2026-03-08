@@ -286,7 +286,7 @@ export function PersonalTab({
                             </div>
                           ))}
                         </div>
-                      </ScrollArea>
+                      </div>
                     </div>
                     
                     <div className="px-5 py-3 bg-muted/30 border-t text-center shrink-0">
