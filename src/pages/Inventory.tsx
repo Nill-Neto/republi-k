@@ -227,7 +227,7 @@ export default function Inventory() {
       ) : filtered.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">Nenhum item movimentado nesta competência.</CardContent></Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ScrollRevealGroup preset="blur-slide" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((item) => {
             const isLow = Number(item.quantity) <= Number(item.min_quantity);
             return (
