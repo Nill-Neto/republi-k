@@ -74,6 +74,16 @@ export function AppLayout() {
   const { membership, isAdmin } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    const handleScroll = () => setIsScrolled(el.scrollTop > 20);
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const sidebarGroups = isAdmin ? [...mainNavGroups, adminGroup] : mainNavGroups;
 
