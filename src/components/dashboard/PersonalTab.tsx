@@ -184,7 +184,7 @@ export function PersonalTab({
                     <List className="h-3 w-3" /> Ver itens atuais ({collectivePendingCurrent.length})
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden flex flex-col max-h-[85vh] bg-background">
+                <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden flex flex-col max-h-[85vh]">
                   <DialogHeader className="px-5 pt-5 pb-4 shrink-0">
                     <DialogTitle className="text-lg font-semibold text-foreground">
                       Rateio em Aberto
