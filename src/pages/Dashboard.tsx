@@ -514,6 +514,7 @@ export default function Dashboard() {
         onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
         onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
         compactTabs={compactTabsList}
+        onCompactChange={setHeroCompact}
       />
 
       <div className="space-y-6">
