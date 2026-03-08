@@ -28,8 +28,8 @@ export function RepublicTab({
   onPayRateio,
 }: RepublicTabProps) {
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* KPI Cards */}
         <Card className={`col-span-1 lg:col-span-2 relative overflow-hidden border-l-4 ${isLate && totalCollectivePendingPrevious > 0 ? "border-l-destructive" : "border-l-primary"} bg-card shadow-sm`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
