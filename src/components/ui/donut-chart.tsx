@@ -115,7 +115,7 @@ const DonutChart = React.forwardRef<HTMLDivElement, DonutChartProps>(
                   strokeWidth={strokeWidth}
                   strokeDasharray={strokeDasharray}
                   strokeDashoffset={-strokeDashoffset} // Negative offset to draw correctly
-                  strokeLinecap="round" // Makes rounded edges
+                  strokeLinecap="butt"
                   initial={{ opacity: 0, strokeDashoffset: circumference }}
                   animate={{ 
                     opacity: 1, 
