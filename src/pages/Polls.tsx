@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 import {
   AlertDialog,
   AlertDialogAction,
