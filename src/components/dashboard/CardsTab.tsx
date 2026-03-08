@@ -400,20 +400,34 @@ export function CardsTab({
         </CardHeader>
         <CardContent className="pt-0">
           <div className="divide-y">
-            {billInstallments.slice(0, 5).map((i: any, idx: number) => (
-              <div key={idx} className="flex justify-between items-center py-3 hover:bg-muted/10 px-2 -mx-2 transition-colors rounded-sm">
-                <div className="min-w-0 pr-4 flex flex-col">
-                  <span className="text-sm font-medium truncate text-foreground/90">{i.expenses?.title}</span>
-                  <span className="text-[10px] text-muted-foreground bg-muted inline-block w-fit px-1.5 rounded-sm mt-0.5">
-                    {i.expenses?.category}
-                  </span>
+            {billInstallments.slice(0, 5).map((i: any, idx: number) => {
+              const totalInstallments = i.expenses?.installments ?? 1;
+              const isAVista = totalInstallments <= 1;
+              const purchaseDate = i.expenses?.purchase_date;
+              return (
+                <div key={idx} className="flex justify-between items-center py-3 hover:bg-muted/10 px-2 -mx-2 transition-colors rounded-sm">
+                  <div className="min-w-0 pr-4 flex flex-col gap-0.5">
+                    <span className="text-sm font-medium truncate text-foreground/90">{i.expenses?.title}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground bg-muted inline-block w-fit px-1.5 rounded-sm">
+                        {getCategoryLabel(i.expenses?.category || "other")}
+                      </span>
+                      {purchaseDate && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(purchaseDate + "T00:00:00"), "dd/MM/yyyy")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-sm block">R$ {Number(i.amount).toFixed(2)}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {isAVista ? "À vista" : `Parc. ${i.installment_number}/${totalInstallments}`}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="font-bold text-sm block">R$ {Number(i.amount).toFixed(2)}</span>
-                  <span className="text-[10px] text-muted-foreground">Parc. {i.installment_number}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {billInstallments.length === 0 && (
               <div className="py-8 text-center text-muted-foreground text-sm flex flex-col items-center gap-2">
                 <div className="h-1 w-12 bg-border rounded-full opacity-50 mb-1"></div>
