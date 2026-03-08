@@ -41,6 +41,9 @@ import {
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCycleDates } from "@/hooks/useCycleDates";
+import { PageHero } from "@/components/layout/PageHero";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { Receipt } from "lucide-react";
 
 const CATEGORIES = [
   { value: "rent", label: "Aluguel" },
