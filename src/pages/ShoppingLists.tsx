@@ -272,10 +272,12 @@ export default function ShoppingLists() {
         </div>
       ) : (
         <>
-          <TabsList>
-            <TabsTrigger value="active">Ativas ({activeLists.length})</TabsTrigger>
-            <TabsTrigger value="completed">Concluídas ({completedLists.length})</TabsTrigger>
-          </TabsList>
+          {!heroCompact && (
+            <TabsList className="w-full justify-start overflow-x-auto bg-transparent gap-2 h-auto p-0">
+              <TabsTrigger value="active" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Ativas ({activeLists.length})</TabsTrigger>
+              <TabsTrigger value="completed" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Concluídas ({completedLists.length})</TabsTrigger>
+            </TabsList>
+          )}
           <TabsContent value="active" className="space-y-3 mt-4">
             {activeLists.length === 0 ? (
               <Card><CardContent className="py-10 text-center text-muted-foreground">Nenhuma lista ativa.</CardContent></Card>
