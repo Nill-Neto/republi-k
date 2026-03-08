@@ -74,7 +74,7 @@ export function AdminTab({
 
   const recentExpenses = useMemo(() =>
     [...collectiveExpenses]
-      .sort((a, b) => new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime())
+      .sort((a, b) => parseLocalDate(b.purchase_date).getTime() - parseLocalDate(a.purchase_date).getTime())
       .slice(0, 6),
     [collectiveExpenses]
   );
