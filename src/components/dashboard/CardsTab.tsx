@@ -212,9 +212,6 @@ export function CardsTab({
             <p className="text-xs text-primary-foreground/60 mt-2 font-medium bg-primary-foreground/10 inline-block px-2 py-1 rounded">
               {format(currentDate, "MMMM/yyyy")}
             </p>
-            <Button variant="secondary" size="sm" className="mt-6 w-full font-medium" asChild>
-              <Link to="/personal/bills">Ver Extrato Completo</Link>
-            </Button>
           </CardContent>
         </Card>
 
