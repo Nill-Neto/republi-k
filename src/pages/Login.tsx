@@ -57,7 +57,7 @@ export default function Login() {
       </div>
 
       {/* Right panel */}
-      <div className="flex flex-1 flex-col items-center justify-center p-8">
+      <main className="flex flex-1 flex-col items-center justify-center p-8">
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center lg:text-left">
             <h2 className="text-3xl font-serif text-foreground">Bem-vindo</h2>
@@ -96,7 +96,7 @@ export default function Login() {
             Ao entrar, você concorda com os termos de uso e política de privacidade.
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

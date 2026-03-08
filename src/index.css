@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+/* DM Sans loaded via <link> in index.html for better performance */
 
 @tailwind base;
 @tailwind components;
@@ -30,7 +30,7 @@
 
     /* Muted: For backgrounds of inputs/disabled states */
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 215 20% 42%;
 
     /* Accent: Standard Hover State (Changed from Teal to Subtle Slate) */
     --accent: 210 40% 96.1%;
