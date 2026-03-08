@@ -102,7 +102,7 @@ export function AppLayout() {
          <span className="text-lg font-bold tracking-tight text-sidebar-foreground">Republi-K</span>
       </div>
       <div className="flex-1 overflow-y-auto py-4 px-3">
-        <nav className="space-y-6">
+        <nav className="space-y-4">
           {sidebarGroups.map((group) => (
             <CollapsibleNavGroup 
               key={group.title} 

@@ -206,7 +206,7 @@ export default function RecurringExpenses() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHero
         title="Recorrências"
         subtitle="Despesas automáticas mensais"

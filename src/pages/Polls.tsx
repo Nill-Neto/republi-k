@@ -186,7 +186,7 @@ export default function Polls() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHero
         title="Votações"
         subtitle="Decisões coletivas da república."

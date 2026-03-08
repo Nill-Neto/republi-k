@@ -91,7 +91,7 @@ export default function HouseRules() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHero
         title="Regras da Casa"
         subtitle="Combinados de convivência da república."

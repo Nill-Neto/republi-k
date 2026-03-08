@@ -520,7 +520,7 @@ export default function Dashboard() {
         onCompactChange={setHeroCompact}
       />
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {!heroCompact && (
         <TabsList className={tabListClass}>
           {!isPersonalFinancePage && isAdmin && (

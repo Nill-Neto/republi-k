@@ -290,7 +290,7 @@ export default function Members() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHero
         title="Moradores"
         subtitle={`${members?.length ?? 0} membro(s) ativo(s)`}

@@ -95,7 +95,7 @@ export default function Profile() {
         icon={<User className="h-4 w-4" />}
       />
 
-      <ScrollRevealGroup preset="blur-slide" className="space-y-6">
+      <ScrollRevealGroup preset="blur-slide" className="space-y-4">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-4">

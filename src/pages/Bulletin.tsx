@@ -114,7 +114,7 @@ export default function Bulletin() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHero
         title="Mural de Avisos"
         subtitle="Comunicados e recados para a república."

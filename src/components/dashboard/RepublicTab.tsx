@@ -96,7 +96,7 @@ export function RepublicTab({
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-12">
+      <div className="grid gap-4 md:grid-cols-12">
         {/* Chart */}
         <Card className="md:col-span-4 lg:col-span-4">
           <CardHeader>

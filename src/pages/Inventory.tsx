@@ -144,7 +144,7 @@ export default function Inventory() {
   const filtered = filter === "all" ? items : filter === "low" ? lowStock : items.filter((i) => i.category === filter);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHero
         title="Estoque"
         subtitle="Itens movimentados nesta competência."

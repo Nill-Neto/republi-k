@@ -51,7 +51,7 @@ export default function AuditLog() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHero
         title="Histórico"
         subtitle="Log de atividades do grupo."

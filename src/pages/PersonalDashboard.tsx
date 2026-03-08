@@ -118,7 +118,7 @@ export default function PersonalDashboard() {
   ].filter(d => d.value > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHero
         title="Meu Financeiro"
         subtitle="Gastos individuais e faturas."

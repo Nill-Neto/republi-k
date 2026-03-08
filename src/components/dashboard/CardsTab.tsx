@@ -200,8 +200,8 @@ export function CardsTab({
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid gap-6 md:grid-cols-3">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card className="bg-primary text-primary-foreground md:col-span-1 shadow-lg shadow-primary/20 border-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-primary-foreground/80">Total em Faturas</CardTitle>

@@ -384,7 +384,7 @@ export function PersonalTab({
         </Card>
       </div>
 
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-12">
         <Card className="lg:col-span-8">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">

@@ -78,7 +78,7 @@ export default function GroupSettings() {
   }
 
   return (
-    <div className="space-y-6 max-w-xl">
+    <div className="space-y-4 max-w-xl">
       <PageHero
         title="Configurações"
         subtitle="Gerencie os dados do grupo."
