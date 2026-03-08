@@ -595,9 +595,22 @@ export default function Expenses() {
     );
   }
 
+  const compactTabsList = (
+    <TabsList className="w-full justify-start overflow-x-auto bg-transparent gap-2 h-auto p-0">
+      <TabsTrigger value="all" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Todas</TabsTrigger>
+      <TabsTrigger value="mine" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Minhas</TabsTrigger>
+      <TabsTrigger value="collective" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Coletivas</TabsTrigger>
+      <TabsTrigger value="recurring" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md gap-1.5">
+        <RefreshCw className="h-3 w-3" /> Recorrentes
+      </TabsTrigger>
+    </TabsList>
+  );
+
   return (
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
     <div className="space-y-6">
       <PageHero
+        compactTabs={compactTabsList}
         title="Despesas"
         subtitle="Gestão financeira do grupo"
         tone="primary"
