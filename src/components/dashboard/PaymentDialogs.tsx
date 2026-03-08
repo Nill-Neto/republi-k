@@ -7,6 +7,17 @@ import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+export type RateioScope = "previous" | "current";
+
+type PendingSplit = {
+  id: string;
+  amount: number;
+  competenceKey?: string | null;
+  expenses?: {
+    title?: string | null;
+  };
+};
+
 interface PaymentDialogsProps {
   payRateioOpen: boolean;
   setPayRateioOpen: (open: boolean) => void;
@@ -14,15 +25,14 @@ interface PaymentDialogsProps {
   setPayIndividualOpen: (open: boolean) => void;
   selectedIndividualSplit: any;
   setSelectedIndividualSplit: (split: any) => void;
-  totalCollectivePendingPrevious: number;
-  totalCollectivePendingCurrent: number;
-  totalCollectivePendingFuture: number;
-  collectivePendingPrevious: any[];
-  collectivePendingCurrent: any[];
-  collectivePendingFuture: any[];
+  collectivePendingByScope: {
+    previous: { total: number; items: PendingSplit[] };
+    current: { total: number; items: PendingSplit[] };
+  };
+  rateioScope: RateioScope;
   individualPending: any[];
   currentDate: Date;
-  onPayRateio: () => void;
+  onPayRateio: (scope: RateioScope) => void;
   onPayIndividual: () => void;
   saving: boolean;
   receiptFile: File | null;
@@ -36,12 +46,8 @@ export function PaymentDialogs({
   setPayIndividualOpen,
   selectedIndividualSplit,
   setSelectedIndividualSplit,
-  totalCollectivePendingPrevious,
-  totalCollectivePendingCurrent,
-  totalCollectivePendingFuture,
-  collectivePendingPrevious,
-  collectivePendingCurrent,
-  collectivePendingFuture,
+  collectivePendingByScope,
+  rateioScope,
   individualPending,
   currentDate,
   onPayRateio,
@@ -50,38 +56,74 @@ export function PaymentDialogs({
   receiptFile,
   setReceiptFile,
 }: PaymentDialogsProps) {
+  const selectedScopeData = collectivePendingByScope[rateioScope];
+  const selectedScopeLabel = rateioScope === "previous"
+    ? "Rateio pendente de competências anteriores"
+    : "Rateio da competência atual";
+
+  const groupedPreviousPending = collectivePendingByScope.previous.items.reduce((acc: Record<string, PendingSplit[]>, item) => {
+    const key = item.competenceKey;
+    if (!key) {
+      if (!acc["Sem competência"]) acc["Sem competência"] = [];
+      acc["Sem competência"].push(item);
+      return acc;
+    }
+
+    const [year, month] = key.split("-");
+    const formattedKey = `${month}/${year}`;
+    if (!acc[formattedKey]) acc[formattedKey] = [];
+    acc[formattedKey].push(item);
+    return acc;
+  }, {});
+
+  const groupedPreviousEntries = Object.entries(groupedPreviousPending).sort(([a], [b]) => {
+    if (a === "Sem competência") return 1;
+    if (b === "Sem competência") return -1;
+    const [monthA, yearA] = a.split("/").map(Number);
+    const [monthB, yearB] = b.split("/").map(Number);
+    return new Date(yearB, monthB - 1, 1).getTime() - new Date(yearA, monthA - 1, 1).getTime();
+  });
+
   return (
     <>
       {/* Rateio Payment Dialog */}
       <Dialog open={payRateioOpen} onOpenChange={setPayRateioOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Pagar Rateio Coletivo</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{selectedScopeLabel}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="p-4 bg-muted/50 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground">Total a pagar ({format(currentDate, "MMMM/yy", { locale: ptBR })})</p>
-              <p className="text-3xl font-bold text-primary mt-1">R$ {totalCollectivePendingPrevious.toFixed(2)}</p>
+              <p className="text-sm text-muted-foreground">
+                {rateioScope === "previous"
+                  ? "Pagamento das competências anteriores"
+                  : `Competência atual (${format(currentDate, "MMMM/yy", { locale: ptBR })})`}
+              </p>
+              <p className="text-3xl font-bold text-primary mt-1">R$ {selectedScopeData.total.toFixed(2)}</p>
             </div>
-            {(collectivePendingPrevious.length > 0 || collectivePendingCurrent.length > 0 || collectivePendingFuture.length > 0) && (
+            {selectedScopeData.items.length > 0 && (
               <div className="border rounded-md p-3 bg-card">
                  <p className="text-xs font-semibold text-muted-foreground mb-2">Detalhamento:</p>
                  <ScrollArea className="h-[120px] pr-2">
                     <div className="space-y-2">
-                      {collectivePendingPrevious.map((s: any) => (
-                        <div key={s.id} className="flex justify-between text-sm border-b pb-1 border-muted last:border-0">
-                          <span className="truncate pr-2 flex-1">{s.expenses?.title}</span>
-                          <span className="font-medium">R$ {Number(s.amount).toFixed(2)}</span>
-                        </div>
-                      ))}
-                      {collectivePendingCurrent.length > 0 && (
-                        <div className="pt-2 text-xs text-muted-foreground">
-                          Competência atual (não incluída no total acima): R$ {totalCollectivePendingCurrent.toFixed(2)}
-                        </div>
-                      )}
-                      {collectivePendingFuture.length > 0 && (
-                        <div className="pt-1 text-xs text-muted-foreground">
-                          Próximas competências (não incluídas no total acima): R$ {totalCollectivePendingFuture.toFixed(2)}
-                        </div>
-                      )}
+                      {rateioScope === "previous"
+                        ? groupedPreviousEntries.map(([competence, items]) => (
+                            <div key={competence} className="space-y-1.5">
+                              <p className="text-xs font-semibold text-muted-foreground">{competence}</p>
+                              {items.map((s) => (
+                                <div key={s.id} className="flex justify-between text-sm border-b pb-1 border-muted last:border-0">
+                                  <span className="truncate pr-2 flex-1">{s.expenses?.title}</span>
+                                  <span className="font-medium">R$ {Number(s.amount).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ))
+                        : selectedScopeData.items.map((s) => (
+                            <div key={s.id} className="flex justify-between text-sm border-b pb-1 border-muted last:border-0">
+                              <span className="truncate pr-2 flex-1">{s.expenses?.title}</span>
+                              <span className="font-medium">R$ {Number(s.amount).toFixed(2)}</span>
+                            </div>
+                          ))}
                     </div>
                  </ScrollArea>
               </div>
@@ -92,7 +134,7 @@ export function PaymentDialogs({
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setPayRateioOpen(false)}>Cancelar</Button>
-              <Button onClick={onPayRateio} disabled={saving || !receiptFile}>
+              <Button onClick={() => onPayRateio(rateioScope)} disabled={saving || !receiptFile}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Enviar
               </Button>
             </DialogFooter>
