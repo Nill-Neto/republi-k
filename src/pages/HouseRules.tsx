@@ -126,7 +126,7 @@ export default function HouseRules() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <ScrollRevealGroup preset="blur-slide" className="space-y-3">
           {rules.map((rule, idx) => (
             <Card key={rule.id}>
               <CardContent className="flex items-start gap-4 py-4">
