@@ -274,7 +274,7 @@ export function CardsTab({
                         </span>
                       </div>
                       <span className="font-semibold tabular-nums">
-                        R$ {segment.value.toFixed(2)}
+                        R$ {segment.value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   ))}
