@@ -170,6 +170,7 @@ export default function ShoppingLists() {
         title="Listas de Compras"
         subtitle="Coletivas e individuais"
         compactTabs={compactTabsList}
+        onCompactChange={setHeroCompact}
         tone="primary"
         icon={<ShoppingCart className="h-4 w-4" />}
         actions={
