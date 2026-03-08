@@ -162,7 +162,7 @@ export default function Onboarding() {
 
       toast({ title: "Grupo criado!", description: `"${groupName}" está pronto. Convide seus moradores.` });
       clearInvite();
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
