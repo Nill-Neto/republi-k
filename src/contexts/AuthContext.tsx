@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
-import { PUBLIC_APP_URL } from "@/config/app";
 
 interface Profile {
   id: string;
@@ -89,18 +88,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loadUserData = async (user: User) => {
-    const [profile, membership] = await Promise.all([
-      ensureProfile(user),
-      fetchMembership(user.id),
-    ]);
+    try {
+      const [profile, membership] = await Promise.all([
+        ensureProfile(user),
+        fetchMembership(user.id),
+      ]);
 
-    setState((prev) => ({
-      ...prev,
-      profile,
-      membership,
-      isAdmin: membership?.role === "admin",
-      loading: false,
-    }));
+      setState((prev) => ({
+        ...prev,
+        profile,
+        membership,
+        isAdmin: membership?.role === "admin",
+        loading: false,
+      }));
+    } catch (error) {
+      console.error("Erro ao carregar dados do usuário", error);
+      setState((prev) => ({
+        ...prev,
+        profile: null,
+        membership: null,
+        isAdmin: false,
+        loading: false,
+      }));
+    }
   };
 
   useEffect(() => {
@@ -110,7 +120,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState((prev) => ({ ...prev, user, session }));
 
         if (user) {
-          setTimeout(() => loadUserData(user), 0);
+          setTimeout(() => {
+            void loadUserData(user);
+          }, 0);
         } else {
           setState({
             user: null,
@@ -124,50 +136,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const user = session?.user ?? null;
-      setState((prev) => ({ ...prev, user, session }));
-      if (user) {
-        loadUserData(user);
-      } else {
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        const user = session?.user ?? null;
+        setState((prev) => ({ ...prev, user, session }));
+        if (user) {
+          void loadUserData(user);
+        } else {
+          setState((prev) => ({ ...prev, loading: false }));
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao recuperar sessão", error);
         setState((prev) => ({ ...prev, loading: false }));
-      }
-    });
+      });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
     const redirectPath = window.location.pathname + window.location.search;
-    await supabase.auth.signInWithOAuth({
-  provider: "google",
-  options: {
-    redirectTo: `${window.location.origin}${redirectPath}`,
-  },
-});
-  const redirectTo = `${window.location.origin}${redirectPath}`;
+    const redirectTo = `${window.location.origin}${redirectPath}`;
+    const inIframe = window.self !== window.top;
 
-// detecta se está embutido
-const inIframe = window.self !== window.top;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
+    });
 
-const { data, error } = await supabase.auth.signInWithOAuth({
-  provider: "google",
-  options: {
-    redirectTo,
-    skipBrowserRedirect: true, // <- importante
-  },
-});
+    if (error) throw error;
+    if (!data.url) throw new Error("Não foi possível iniciar o login com Google.");
 
-if (error) throw error;
+    if (inIframe) {
+      window.open(data.url, "_blank", "noopener,noreferrer");
+      return;
+    }
 
-// data.url é a URL do Google
-if (inIframe) {
-  // em preview embutido, abre fora do iframe
-  window.open(data.url, "_blank", "noopener,noreferrer");
-} else {
-  // fora do iframe, pode redirecionar normal
-  window.location.assign(data.url);
-}
+    window.location.assign(data.url);
   };
 
   const signOut = async () => {
