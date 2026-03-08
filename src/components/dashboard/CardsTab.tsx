@@ -18,6 +18,7 @@ import { CHART_COLORS, CATEGORY_COLORS, getCategoryLabel } from "@/constants/cat
 import { DonutChart, type DonutChartSegment } from "@/components/ui/donut-chart";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
