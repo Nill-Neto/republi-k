@@ -240,7 +240,7 @@ export function CardsTab({
                             {displayLabel}
                           </p>
                           <p className="text-2xl font-bold text-foreground">
-                            R$ {displayValue.toFixed(0)}
+                            R$ {displayValue.toFixed(2)}
                           </p>
                           {activeSegment && (
                             <p className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full mt-1">
