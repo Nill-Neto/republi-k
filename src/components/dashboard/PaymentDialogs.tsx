@@ -165,8 +165,8 @@ export function PaymentDialogs({
           </DialogHeader>
 
           {!selectedIndividualSplit ? (
-            <div className="flex-1 min-h-0 border-t">
-              <ScrollArea className="max-h-[45vh]">
+            <div className="flex-1 min-h-0 overflow-hidden border-t">
+              <ScrollArea className="h-full max-h-[50vh]">
                 <div className="divide-y">
                   {individualPending.map((s: any) => (
                     <div key={s.id} className="px-5 py-3.5 flex items-center justify-between hover:bg-muted/30 transition-colors">
