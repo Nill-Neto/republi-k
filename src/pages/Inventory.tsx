@@ -275,7 +275,7 @@ export default function Inventory() {
               </Card>
             );
           })}
-        </div>
+        </ScrollRevealGroup>
       )}
     </div>
   );

@@ -180,6 +180,7 @@ export default function Profile() {
           <p>Seus dados sensíveis (CPF) são protegidos por RLS e validação server-side</p>
         </CardContent>
       </Card>
+      </ScrollRevealGroup>
     </div>
   );
 }

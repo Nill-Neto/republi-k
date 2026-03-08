@@ -183,8 +183,9 @@ export default function ShoppingLists() {
               <Button className="w-full" disabled={!newList.name.trim()} onClick={() => createList.mutate()}>Criar lista</Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       {selectedList && currentList ? (
         <div className="space-y-4">

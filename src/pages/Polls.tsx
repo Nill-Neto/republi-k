@@ -335,7 +335,7 @@ export default function Polls() {
               </Card>
             );
           })}
-        </div>
+        </ScrollRevealGroup>
       )}
     </div>
   );

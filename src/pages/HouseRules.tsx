@@ -161,7 +161,7 @@ export default function HouseRules() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </ScrollRevealGroup>
       )}
     </div>
   );

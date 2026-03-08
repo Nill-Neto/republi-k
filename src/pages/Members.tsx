@@ -299,7 +299,7 @@ export default function Members() {
         badge={<Badge variant="secondary">Grupo ativo</Badge>}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ScrollRevealGroup preset="blur-slide" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {members?.map((m) => {
           const displayName = m.profile?.full_name?.trim() || "Morador sem nome";
           const initials = displayName

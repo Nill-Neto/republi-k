@@ -195,7 +195,7 @@ export default function Bulletin() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </ScrollRevealGroup>
       )}
     </div>
   );

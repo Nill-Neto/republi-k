@@ -106,12 +106,12 @@ export default function Invites() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif">Convites</h1>
-        <p className="text-muted-foreground mt-1">
-          Convide moradores para o grupo.
-        </p>
-      </div>
+      <PageHero
+        title="Convites"
+        subtitle="Convide moradores para o grupo."
+        tone="primary"
+        icon={<UserPlus className="h-4 w-4" />}
+      />
 
       <Card>
         <CardHeader>

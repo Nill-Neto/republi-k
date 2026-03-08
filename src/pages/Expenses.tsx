@@ -597,13 +597,13 @@ export default function Expenses() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-serif">Despesas</h1>
-          <p className="text-muted-foreground mt-1">Gestão financeira do grupo</p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <PageHero
+        title="Despesas"
+        subtitle="Gestão financeira do grupo"
+        tone="primary"
+        icon={<Receipt className="h-4 w-4" />}
+        actions={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth}>
               <ChevronLeft className="h-4 w-4" />

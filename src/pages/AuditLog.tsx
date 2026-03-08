@@ -84,7 +84,7 @@ export default function AuditLog() {
               </Card>
             );
           })}
-        </div>
+        </ScrollRevealGroup>
       )}
     </div>
   );

@@ -372,7 +372,7 @@ export default function RecurringExpenses() {
             </Card>
           );
         })}
-      </div>
+      </ScrollRevealGroup>
     </div>
   );
 }
