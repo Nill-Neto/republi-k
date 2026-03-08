@@ -67,13 +67,15 @@ export function RepublicTab({
           </CardContent>
         </Card>
 
-        <Card className="col-span-1">
+        <Card className="col-span-1 border-l-4 border-l-secondary bg-card shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total da Casa</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary">
+              <Receipt className="h-4 w-4 text-secondary-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {totalMonthExpenses.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-foreground">R$ {totalMonthExpenses.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground mt-1">Soma de todas despesas coletivas</p>
           </CardContent>
         </Card>
