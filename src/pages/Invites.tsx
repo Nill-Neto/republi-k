@@ -105,7 +105,7 @@ export default function Invites() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-[calc(100vh-8rem)] overflow-x-hidden">
       <PageHero
         title="Convites"
         subtitle="Convide moradores para o grupo."
