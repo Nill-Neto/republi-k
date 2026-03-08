@@ -50,7 +50,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             >
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Dashboard key="dashboard-general" />} />
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/payments" element={<Payments />} />
               <Route path="/recurring" element={<RecurringExpenses />} />

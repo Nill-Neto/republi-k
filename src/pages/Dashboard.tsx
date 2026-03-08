@@ -38,6 +38,12 @@ export default function Dashboard() {
     setActiveTab(isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic"));
   }, [isPersonalFinancePage, isAdmin]);
 
+  const firstAvailableTab = useMemo(() => {
+    if (isPersonalFinancePage) return "personal";
+    if (isAdmin) return "admin";
+    return "republic";
+  }, [isPersonalFinancePage, isAdmin]);
+
   // --- Group Settings & Initial Date Logic ---
   const { data: groupSettings } = useQuery({
     queryKey: ["group-settings-dashboard", membership?.group_id],
