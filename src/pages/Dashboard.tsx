@@ -15,11 +15,14 @@ import { CardsTab } from "@/components/dashboard/CardsTab";
 import { AdminTab } from "@/components/dashboard/AdminTab";
 import { PaymentDialogs } from "@/components/dashboard/PaymentDialogs";
 import { getCategoryLabel } from "@/constants/categories";
+import { useLocation } from "react-router-dom";
 
 export default function Dashboard() {
   const { profile, membership, user, isAdmin } = useAuth();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const now = new Date();
+  const isPersonalFinancePage = location.pathname === "/personal/financas";
   
   // Payment State
   const [payRateioOpen, setPayRateioOpen] = useState(false);
@@ -27,6 +30,12 @@ export default function Dashboard() {
   const [selectedIndividualSplit, setSelectedIndividualSplit] = useState<any>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const firstAvailableTab = useMemo(() => {
+    if (isPersonalFinancePage) return "personal";
+    if (isAdmin) return "admin";
+    return "republic";
+  }, [isPersonalFinancePage, isAdmin]);
 
   // --- Group Settings & Initial Date Logic ---
   const { data: groupSettings } = useQuery({
@@ -462,25 +471,31 @@ export default function Dashboard() {
         onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
       />
 
-      <Tabs defaultValue={isAdmin ? "admin" : "republic"} className="space-y-6">
+      <Tabs defaultValue={firstAvailableTab} className="space-y-6">
         <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6">
-          {isAdmin && (
+          {!isPersonalFinancePage && isAdmin && (
             <TabsTrigger value="admin" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
               <Shield className="h-4 w-4 mr-2" /> Administração
             </TabsTrigger>
           )}
-          <TabsTrigger value="republic" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
-            <Users className="h-4 w-4 mr-2" /> República
-          </TabsTrigger>
-          <TabsTrigger value="personal" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
-            <User className="h-4 w-4 mr-2" /> Pessoal
-          </TabsTrigger>
-          <TabsTrigger value="cards" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
-            <CreditCard className="h-4 w-4 mr-2" /> Cartões
-          </TabsTrigger>
+          {!isPersonalFinancePage && (
+            <TabsTrigger value="republic" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
+              <Users className="h-4 w-4 mr-2" /> República
+            </TabsTrigger>
+          )}
+          {isPersonalFinancePage && (
+            <>
+              <TabsTrigger value="personal" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
+                <User className="h-4 w-4 mr-2" /> Dashboard Pessoal
+              </TabsTrigger>
+              <TabsTrigger value="cards" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
+                <CreditCard className="h-4 w-4 mr-2" /> Cartões
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
-        {isAdmin && (
+        {!isPersonalFinancePage && isAdmin && (
           <TabsContent value="admin" className="space-y-6">
             {adminData ? (
            <AdminTab 
@@ -502,45 +517,51 @@ export default function Dashboard() {
           </TabsContent>
         )}
 
-        <TabsContent value="republic" className="space-y-6">
-          <RepublicTab
-            collectiveExpenses={collectiveExpenses}
-            totalMonthExpenses={totalMonthExpenses}
-            republicChartData={republicChartData}
-            totalCollectivePendingPrevious={totalCollectivePendingPrevious}
-            totalCollectivePendingCurrent={totalCollectivePendingCurrent}
-            isLate={isLate}
-            onPayRateio={() => setPayRateioOpen(true)}
-          />
-        </TabsContent>
+        {!isPersonalFinancePage && (
+          <TabsContent value="republic" className="space-y-6">
+            <RepublicTab
+              collectiveExpenses={collectiveExpenses}
+              totalMonthExpenses={totalMonthExpenses}
+              republicChartData={republicChartData}
+              totalCollectivePendingPrevious={totalCollectivePendingPrevious}
+              totalCollectivePendingCurrent={totalCollectivePendingCurrent}
+              isLate={isLate}
+              onPayRateio={() => setPayRateioOpen(true)}
+            />
+          </TabsContent>
+        )}
 
-        <TabsContent value="personal" className="space-y-6">
-          <PersonalTab
-            totalIndividualPending={totalIndividualPending}
-            totalCollectivePendingPrevious={totalCollectivePendingPrevious}
-            totalCollectivePendingCurrent={totalCollectivePendingCurrent}
-            collectivePendingPreviousByCompetence={collectivePendingPreviousByCompetence}
-            collectivePendingCurrent={collectivePendingCurrent}
-            individualPending={individualPending}
-            totalPersonalCash={totalPersonalCash}
-            totalBill={totalBill}
-            totalUserExpenses={totalUserExpenses}
-            myCollectiveShare={myCollectiveShare}
-            personalChartData={personalChartData}
-            myPersonalExpenses={myPersonalExpenses}
-          />
-        </TabsContent>
+        {isPersonalFinancePage && (
+          <>
+            <TabsContent value="personal" className="space-y-6">
+              <PersonalTab
+                totalIndividualPending={totalIndividualPending}
+                totalCollectivePendingPrevious={totalCollectivePendingPrevious}
+                totalCollectivePendingCurrent={totalCollectivePendingCurrent}
+                collectivePendingPreviousByCompetence={collectivePendingPreviousByCompetence}
+                collectivePendingCurrent={collectivePendingCurrent}
+                individualPending={individualPending}
+                totalPersonalCash={totalPersonalCash}
+                totalBill={totalBill}
+                totalUserExpenses={totalUserExpenses}
+                myCollectiveShare={myCollectiveShare}
+                personalChartData={personalChartData}
+                myPersonalExpenses={myPersonalExpenses}
+              />
+            </TabsContent>
 
-        <TabsContent value="cards" className="space-y-6">
-          <CardsTab 
-            totalBill={totalBill}
-            currentDate={currentDate}
-            cardsChartData={cardsChartData}
-            creditCards={creditCards}
-            cardsBreakdown={cardsBreakdown}
-            billInstallments={billInstallments}
-          />
-        </TabsContent>
+            <TabsContent value="cards" className="space-y-6">
+              <CardsTab 
+                totalBill={totalBill}
+                currentDate={currentDate}
+                cardsChartData={cardsChartData}
+                creditCards={creditCards}
+                cardsBreakdown={cardsBreakdown}
+                billInstallments={billInstallments}
+              />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
 
       <PaymentDialogs

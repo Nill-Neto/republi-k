@@ -9,6 +9,13 @@ import { CHART_COLORS, CATEGORY_COLORS } from "@/constants/categories";
 import { DonutChart, type DonutChartSegment } from "@/components/ui/donut-chart";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface CardsTabProps {
   totalBill: number;
@@ -28,6 +35,7 @@ export function CardsTab({
   billInstallments,
 }: CardsTabProps) {
   const [hoveredSegmentLabel, setHoveredSegmentLabel] = useState<string | null>(null);
+  const [selectedCard, setSelectedCard] = useState<any | null>(null);
 
   const donutData: DonutChartSegment[] = cardsChartData.map((entry, index) => ({
     label: entry.name,
@@ -39,6 +47,12 @@ export function CardsTab({
   const displayValue = activeSegment ? activeSegment.value : totalBill;
   const displayLabel = activeSegment ? activeSegment.label : "Total Fatura";
   const displayPercentage = activeSegment && totalBill > 0 ? (activeSegment.value / totalBill) * 100 : 100;
+
+  const selectedCardInstallments = selectedCard
+    ? billInstallments.filter((i: any) => i.expenses?.credit_card_id === selectedCard.id)
+    : [];
+
+  const selectedCardTotal = selectedCardInstallments.reduce((sum: number, i: any) => sum + Number(i.amount), 0);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -159,7 +173,13 @@ export function CardsTab({
             {creditCards.map(card => {
               const billValue = cardsBreakdown[card.id] || 0;
               return (
-                <Card key={card.id} className="flex flex-col justify-between hover:shadow-md transition-all border-l-4 border-l-primary/80">
+                <button
+                  key={card.id}
+                  type="button"
+                  onClick={() => setSelectedCard(card)}
+                  aria-label={`Abrir fatura do cartão ${card.label}`}
+                  className="rounded-lg border bg-card text-card-foreground shadow-sm flex flex-col justify-between hover:shadow-md transition-all border-l-4 border-l-primary/80 cursor-pointer text-left"
+                >
                   <CardHeader className="pb-2 pt-4 px-4">
                     <div className="flex justify-between items-start">
                       <div>
@@ -174,7 +194,7 @@ export function CardsTab({
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Fatura Atual</p>
                       <p className="text-2xl font-bold text-primary">R$ {billValue.toFixed(2)}</p>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-2 text-[10px] bg-muted/40 p-2 rounded border border-border/50">
                       <div>
                         <span className="text-muted-foreground block">Fecha dia</span>
@@ -186,7 +206,7 @@ export function CardsTab({
                       </div>
                     </div>
                   </CardContent>
-                </Card>
+                </button>
               );
             })}
             
@@ -230,6 +250,44 @@ export function CardsTab({
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedCard} onOpenChange={(open) => !open && setSelectedCard(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Fatura - {selectedCard?.label}</DialogTitle>
+            <DialogDescription>
+              Competência {format(currentDate, "MMMM/yyyy")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Total da Fatura</p>
+              <p className="text-2xl font-bold text-primary">R$ {selectedCardTotal.toFixed(2)}</p>
+            </div>
+
+            <div className="max-h-[360px] overflow-y-auto border rounded-lg divide-y">
+              {selectedCardInstallments.map((item: any, index: number) => (
+                <div key={`${item.id}-${index}`} className="flex items-center justify-between p-3">
+                  <div className="min-w-0 pr-3">
+                    <p className="text-sm font-medium truncate">{item.expenses?.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.expenses?.category} • Parcela {item.installment_number}
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold">R$ {Number(item.amount).toFixed(2)}</p>
+                </div>
+              ))}
+
+              {selectedCardInstallments.length === 0 && (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  Nenhum lançamento encontrado para este cartão nesta competência.
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
