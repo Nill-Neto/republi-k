@@ -153,14 +153,37 @@ export default function Dashboard() {
       const targetMonth = currentDate.getMonth() + 1; 
       const targetYear = currentDate.getFullYear();
 
-      const { data } = await supabase
-        .from("expense_installments" as any)
-        .select("id, amount, installment_number, expenses(title, category, credit_card_id, expense_type, purchase_date, installments)")
-        .eq("user_id", user!.id)
-        .eq("bill_month", targetMonth)
-        .eq("bill_year", targetYear);
+      const [groupRes, personalRes] = await Promise.all([
+        supabase
+          .from("expense_installments" as any)
+          .select("id, amount, installment_number, expenses(title, category, credit_card_id, expense_type, purchase_date, installments)")
+          .eq("user_id", user!.id)
+          .eq("bill_month", targetMonth)
+          .eq("bill_year", targetYear)
+          .limit(1000),
+        supabase
+          .from("personal_expense_installments")
+          .select("id, amount, installment_number, personal_expenses(title, credit_card_id, purchase_date, installments)")
+          .eq("user_id", user!.id)
+          .eq("bill_month", targetMonth)
+          .eq("bill_year", targetYear)
+          .limit(1000),
+      ]);
 
-      return data ?? [];
+      const groupItems = (groupRes.data as any[] ?? []);
+      const personalItems = (personalRes.data as any[] ?? []).map((p: any) => ({
+        ...p,
+        expenses: {
+          title: p.personal_expenses?.title,
+          category: "other",
+          credit_card_id: p.personal_expenses?.credit_card_id,
+          expense_type: "personal",
+          purchase_date: p.personal_expenses?.purchase_date,
+          installments: p.personal_expenses?.installments ?? 1,
+        },
+      }));
+
+      return [...groupItems, ...personalItems];
     },
     enabled: !!user,
   });
