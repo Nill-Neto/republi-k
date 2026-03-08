@@ -98,7 +98,7 @@ export function PersonalTab({
             {collectivePendingPreviousByCompetence.length > 0 && (
               <Dialog open={isPreviousCollectiveOpen} onOpenChange={setIsPreviousCollectiveOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="link" className="h-auto p-0 mt-2 text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                  <Button variant="outline" size="sm" className="mt-2 h-7 text-xs gap-1.5">
                     <List className="h-3 w-3" /> Ver detalhamento
                   </Button>
                 </DialogTrigger>
@@ -164,7 +164,7 @@ export function PersonalTab({
             {collectivePendingCurrent.length > 0 && (
               <Dialog open={isCurrentCollectiveOpen} onOpenChange={setIsCurrentCollectiveOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="link" className="h-auto p-0 mt-2 text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                  <Button variant="outline" size="sm" className="mt-2 h-7 text-xs gap-1.5">
                     <List className="h-3 w-3" /> Ver itens atuais ({collectivePendingCurrent.length})
                   </Button>
                 </DialogTrigger>
@@ -220,7 +220,7 @@ export function PersonalTab({
               <div className="mt-2">
                 <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="link" className="h-auto p-0 text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                    <Button variant="outline" size="sm" className="mt-1 h-7 text-xs gap-1.5">
                       <List className="h-3 w-3" /> Ver lista ({individualPending.length})
                     </Button>
                   </DialogTrigger>
@@ -285,7 +285,7 @@ export function PersonalTab({
             {cashExpenses.length > 0 && (
               <Dialog open={isCashDetailOpen} onOpenChange={setIsCashDetailOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="link" className="h-auto p-0 mt-2 text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                  <Button variant="outline" size="sm" className="mt-2 h-7 text-xs gap-1.5">
                     <List className="h-3 w-3" /> Ver itens ({cashExpenses.length})
                   </Button>
                 </DialogTrigger>
