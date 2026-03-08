@@ -128,9 +128,6 @@ export default function PersonalDashboard() {
             <Button variant="outline" size="sm" asChild>
               <Link to="/expenses"><Calendar className="h-4 w-4 mr-2" /> Todas Despesas</Link>
             </Button>
-            <Button size="sm" asChild>
-              <Link to="/personal/bills"><CreditCard className="h-4 w-4 mr-2" /> Minhas Faturas</Link>
-            </Button>
           </div>
         }
       />
