@@ -359,7 +359,7 @@ export function PersonalTab({
                     <p className="text-sm">Nenhuma despesa individual nesta competência.</p>
                   </div>
                 ) : (
-                  [...myPersonalExpenses].sort((a, b) => new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime()).map(e => (
+                  [...myPersonalExpenses].sort((a, b) => parseLocalDate(b.purchase_date).getTime() - parseLocalDate(a.purchase_date).getTime()).map(e => (
                     <div key={e.id} className="flex items-center justify-between border-b border-border/40 pb-3 last:border-0 last:pb-0 hover:bg-muted/30 p-2 rounded-md transition-colors">
                       <div className="flex flex-col gap-1">
                         <p className="text-sm font-medium">{e.title}</p>
