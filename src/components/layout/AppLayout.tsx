@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "./NotificationBell";
@@ -39,7 +39,7 @@ const mainNavGroups = [
   {
     title: "Moradia",
     items: [
-      { to: "/", icon: LayoutDashboard, label: "Painel Geral" },
+      { to: "/dashboard", icon: LayoutDashboard, label: "Painel Geral" },
       { to: "/expenses", icon: Receipt, label: "Despesas" },
       { to: "/payments", icon: CreditCard, label: "Pagamentos" },
       { to: "/inventory", icon: Package, label: "Estoque" },
@@ -74,11 +74,21 @@ export function AppLayout() {
   const { membership, isAdmin } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    const handleScroll = () => setIsScrolled(el.scrollTop > 20);
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const sidebarGroups = isAdmin ? [...mainNavGroups, adminGroup] : mainNavGroups;
 
   const Logo = () => (
-    <Link to="/" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
+    <Link to="/dashboard" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
         R
       </div>
@@ -118,8 +128,18 @@ export function AppLayout() {
 
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
-      {/* Header Superior Fixo */}
-      <header className="z-50 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 px-4 md:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* Header Superior Fixo — scroll-aware */}
+      <motion.header
+        className={cn(
+          "z-50 flex h-16 shrink-0 items-center justify-between px-4 md:px-6 transition-all duration-300 border-b",
+          isScrolled
+            ? "bg-card/80 backdrop-blur-xl shadow-sm"
+            : "bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60"
+        )}
+        initial={{ opacity: 0, y: -12, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ type: "spring", bounce: 0.3, duration: 0.7 }}
+      >
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -184,7 +204,7 @@ export function AppLayout() {
           <NotificationBell />
           <UserMenu />
         </div>
-      </header>
+      </motion.header>
 
       {/* Conteúdo Principal (Sidebar + Main) */}
       <div className="flex flex-1 overflow-hidden relative">
@@ -206,7 +226,13 @@ export function AppLayout() {
           </>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-background relative">
+        <main ref={mainRef} className="flex-1 overflow-x-hidden overflow-y-auto p-4 pt-1 md:px-8 md:pt-2 bg-background relative">
+          {/* Decorative background — clipped to prevent scroll overflow */}
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute inset-0 [background:radial-gradient(125%_125%_at_50%_0%,transparent_40%,hsl(var(--primary)/0.08)_100%)]" />
+            <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
+            <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-accent/10 blur-3xl" />
+          </div>
           <div className="max-w-7xl mx-auto w-full">
             <Outlet />
           </div>

@@ -1,32 +1,35 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { AnimatedGroup } from "@/components/ui/animated-group";
+import { TextEffect } from "@/components/ui/text-effect";
+import { motion, type Variants, useMotionValueEvent, useScroll } from "framer-motion";
 
 interface PageHeroProps {
-  title: ReactNode;
-  subtitle?: ReactNode;
+  title: string;
+  subtitle?: string;
   actions?: ReactNode;
   badge?: ReactNode;
   icon?: ReactNode;
   tone?: "default" | "primary" | "warning";
+  /** Tabs element rendered inside the hero when in compact/sticky mode */
+  compactTabs?: ReactNode;
+  /** Called when compact state changes */
+  onCompactChange?: (isCompact: boolean) => void;
 }
 
-
-const toneStyles: Record<NonNullable<PageHeroProps["tone"]>, string> = {
-  default: "border-border bg-gradient-to-br from-card via-card/95 to-muted/70",
-  primary: "border-primary/25 bg-gradient-to-br from-primary/25 via-primary/10 to-card",
-  warning: "border-warning/35 bg-gradient-to-br from-warning/25 via-warning/10 to-card",
-};
 const toneAccentClass: Record<NonNullable<PageHeroProps["tone"]>, string> = {
   default: "bg-border",
   primary: "bg-primary",
   warning: "bg-warning",
 };
 
-
-const toneGlowClass: Record<NonNullable<PageHeroProps["tone"]>, string> = {
-  default: "bg-muted/60",
-  primary: "bg-primary/80",
-  warning: "bg-warning/80",
+const accentVariants: Variants = {
+  hidden: { scaleX: 0, opacity: 0 },
+  visible: {
+    scaleX: 1,
+    opacity: 1,
+    transition: { type: "spring" as const, bounce: 0.2, duration: 0.6 },
+  },
 };
 
 export function PageHero({
@@ -36,28 +39,121 @@ export function PageHero({
   badge,
   icon,
   tone = "default",
+  compactTabs,
+  onCompactChange,
 }: PageHeroProps) {
+  const [isCompact, setIsCompact] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsCompact(!entry.isIntersecting);
+      },
+      { threshold: 0, rootMargin: "-1px 0px 0px 0px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    onCompactChange?.(isCompact);
+  }, [isCompact, onCompactChange]);
+
   return (
-    <section className="relative overflow-hidden rounded-xl border bg-card/70 p-5 backdrop-blur supports-[backdrop-filter]:bg-card/60 sm:p-6">
-      <div className={cn("absolute inset-x-0 top-0 h-1", toneAccentClass[tone])} aria-hidden="true" />
+    <>
+      {/* Sentinel element — when this scrolls out, hero contracts */}
+      <div ref={sentinelRef} className="h-0 w-full" aria-hidden="true" />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-        <div className="min-w-0">
-          {(badge || icon) && (
-            <div className="mb-3 flex items-center gap-2 text-muted-foreground">
-              {icon ? <span className="shrink-0">{icon}</span> : null}
-              {badge}
-            </div>
+      <motion.section
+        layout
+        className={cn(
+          "relative overflow-hidden rounded-xl border transition-all duration-300 z-30",
+          isCompact
+            ? "sticky top-0 bg-transparent backdrop-blur-xl shadow-lg p-3 sm:p-3"
+            : "bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-4 sm:p-5"
+        )}
+      >
+        <motion.div
+          className={cn("absolute inset-x-0 top-0 h-1 origin-left", toneAccentClass[tone])}
+          variants={accentVariants}
+          initial="hidden"
+          animate="visible"
+          aria-hidden="true"
+        />
+
+        <div
+          className={cn(
+            "grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center transition-all duration-300",
+            isCompact && "gap-2"
           )}
+        >
+          <div className="min-w-0">
+            {(badge || icon) && !isCompact && (
+              <AnimatedGroup preset="fade" className="mb-3 flex items-center gap-2 text-muted-foreground">
+                {icon ? <span className="shrink-0">{icon}</span> : null}
+                {badge ? <span>{badge}</span> : null}
+              </AnimatedGroup>
+            )}
 
-          <h1 className="text-3xl font-serif tracking-tight">{title}</h1>
-          {subtitle ? <p className="mt-1 text-sm text-muted-foreground sm:text-base">{subtitle}</p> : null}
+            {isCompact ? (
+              <div className="flex items-center gap-2 min-w-0">
+                {icon ? <span className="shrink-0 text-muted-foreground">{icon}</span> : null}
+                <h1 className="text-lg font-serif tracking-tight text-foreground truncate">
+                  {title}
+                </h1>
+              </div>
+            ) : (
+              <>
+                <TextEffect
+                  preset="blur"
+                  per="word"
+                  as="h1"
+                  className="text-3xl font-serif tracking-tight text-foreground"
+                  delay={0.1}
+                >
+                  {title}
+                </TextEffect>
+
+                {subtitle ? (
+                  <TextEffect
+                    preset="fade"
+                    per="word"
+                    as="p"
+                    className="mt-1 text-sm text-muted-foreground sm:text-base"
+                    delay={0.3}
+                  >
+                    {subtitle}
+                  </TextEffect>
+                ) : null}
+              </>
+            )}
+          </div>
+
+          {actions ? (
+            isCompact ? (
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                {actions}
+              </div>
+            ) : (
+              <AnimatedGroup preset="blur-slide" className="flex flex-wrap items-center gap-2 lg:justify-end">
+                {actions}
+              </AnimatedGroup>
+            )
+          ) : null}
         </div>
 
-        {actions ? (
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">{actions}</div>
-        ) : null}
-      </div>
-    </section>
+        {/* Compact tabs — shown only when sticky */}
+        {isCompact && compactTabs && (
+          <div className="mt-2 -mb-1 border-t border-border/40 pt-2">
+            {compactTabs}
+          </div>
+        )}
+      </motion.section>
+    </>
   );
 }

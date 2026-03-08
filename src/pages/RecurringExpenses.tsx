@@ -25,6 +25,8 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, RefreshCw, Calendar, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 
 const CATEGORIES = [
   { value: "rent", label: "Aluguel" },
@@ -205,11 +207,12 @@ export default function RecurringExpenses() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-serif">Recorrências</h1>
-          <p className="text-muted-foreground mt-1">Despesas automáticas mensais</p>
-        </div>
+      <PageHero
+        title="Recorrências"
+        subtitle="Despesas automáticas mensais"
+        tone="primary"
+        icon={<RefreshCw className="h-4 w-4" />}
+        actions={
         <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>
             <DialogTrigger asChild>
               <Button className="gap-2"><Plus className="h-4 w-4" /> Nova Recorrência</Button>
@@ -277,13 +280,14 @@ export default function RecurringExpenses() {
               </div>
             </DialogContent>
           </Dialog>
-      </div>
+        }
+      />
 
       {recurring?.length === 0 && (
         <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhuma recorrência configurada.</CardContent></Card>
       )}
 
-      <div className="space-y-3">
+      <ScrollRevealGroup preset="blur-slide" className="space-y-3">
         {recurring?.map((r) => {
           const catLabel = CATEGORIES.find((c) => c.value === r.category)?.label ?? r.category;
           return (
@@ -368,7 +372,7 @@ export default function RecurringExpenses() {
             </Card>
           );
         })}
-      </div>
+      </ScrollRevealGroup>
     </div>
   );
 }

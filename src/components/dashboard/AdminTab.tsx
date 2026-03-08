@@ -95,16 +95,6 @@ export function AdminTab({
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Painel Administrativo</h2>
-          <p className="text-sm text-muted-foreground capitalize">Ciclo: {cycleLabel}</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} className="h-8 text-xs gap-1.5">
-          <RefreshCw className="h-3.5 w-3.5" /> Atualizar
-        </Button>
-      </div>
 
       {/* Quick Actions - moved to top */}
       <Card>

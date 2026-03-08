@@ -7,6 +7,7 @@ import { History, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 
 const actionLabels: Record<string, string> = {
   create: "Criou",
@@ -61,7 +62,7 @@ export default function AuditLog() {
       {!logs?.length ? (
         <p className="text-sm text-muted-foreground">Nenhuma atividade registrada.</p>
       ) : (
-        <div className="space-y-2">
+        <ScrollRevealGroup preset="fade" className="space-y-2">
           {logs.map((log) => {
             const profileData = log.profiles as unknown as { full_name: string } | null;
             return (
@@ -83,7 +84,7 @@ export default function AuditLog() {
               </Card>
             );
           })}
-        </div>
+        </ScrollRevealGroup>
       )}
     </div>
   );

@@ -24,6 +24,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Package, Plus, AlertTriangle, Minus, PlusCircle, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 
 const categories = [
   { value: "limpeza", label: "Limpeza" },
@@ -143,13 +145,13 @@ export default function Inventory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-serif">Estoque</h1>
-          <p className="text-muted-foreground text-sm">Itens movimentados nesta competência.</p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <PageHero
+        title="Estoque"
+        subtitle="Itens movimentados nesta competência."
+        tone="primary"
+        icon={<Package className="h-4 w-4" />}
+        actions={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {/* Month Selector */}
           <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
@@ -193,8 +195,9 @@ export default function Inventory() {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <div className="text-sm text-muted-foreground">
         Exibindo competência: <strong>{format(cycleStart, "dd/MM")}</strong> até <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong>
@@ -224,7 +227,7 @@ export default function Inventory() {
       ) : filtered.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">Nenhum item movimentado nesta competência.</CardContent></Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ScrollRevealGroup preset="blur-slide" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((item) => {
             const isLow = Number(item.quantity) <= Number(item.min_quantity);
             return (
@@ -272,7 +275,7 @@ export default function Inventory() {
               </Card>
             );
           })}
-        </div>
+        </ScrollRevealGroup>
       )}
     </div>
   );

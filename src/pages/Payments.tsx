@@ -12,10 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Plus, Check, X, Upload, Image, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
+import { Loader2, Plus, Check, X, Upload, Image, ChevronLeft, ChevronRight, ChevronsUpDown, CreditCard } from "lucide-react";
 import { format, addMonths, subMonths, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 
 export default function Payments() {
   const { membership, isAdmin, user } = useAuth();
@@ -23,6 +25,7 @@ export default function Payments() {
   
   const [open, setOpen] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
+  const [heroCompact, setHeroCompact] = useState(false);
   
   // Alterado para array de IDs
   const [selectedSplitIds, setSelectedSplitIds] = useState<string[]>([]);
@@ -203,159 +206,142 @@ export default function Payments() {
     );
   }
 
+  const defaultTab = isAdmin ? "pending" : "all";
+
+  const tabTriggerClass = "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-foreground/60 text-xs font-semibold px-3 py-1.5 rounded-md transition-all";
+  const tabListClass = "w-full justify-start overflow-x-auto bg-muted/50 rounded-lg p-1 h-auto gap-1";
+
+  const compactTabsList = (
+    <TabsList className={tabListClass}>
+      {isAdmin && <TabsTrigger value="pending" className={tabTriggerClass}>Pendentes</TabsTrigger>}
+      <TabsTrigger value="all" className={tabTriggerClass}>Todos</TabsTrigger>
+    </TabsList>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-serif">Pagamentos</h1>
-          <p className="text-muted-foreground mt-1">Histórico de pagamentos.</p>
-        </div>
+    <Tabs defaultValue={defaultTab}>
+    <div className="space-y-4">
+      <PageHero
+        compactTabs={compactTabsList}
+        onCompactChange={setHeroCompact}
+        title="Pagamentos"
+        subtitle="Histórico de pagamentos."
+        tone="primary"
+        icon={<CreditCard className="h-4 w-4" />}
+        actions={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
+                {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          {/* Month Selector */}
-          <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
-             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
-               <ChevronLeft className="h-4 w-4" />
-             </Button>
-             <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
-               {format(currentDate, "MMMM yyyy", { locale: ptBR })}
-             </div>
-             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
-               <ChevronRight className="h-4 w-4" />
-             </Button>
-           </div>
-
-          {!isAdmin && (pendingSplits?.length ?? 0) > 0 && (
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 h-10"><Plus className="h-4 w-4" /> Enviar Pagamento</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md overflow-visible">
-                <DialogHeader>
-                  <DialogTitle className="font-serif">Enviar Comprovante</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-2">
-                  
-                  {/* Multi-select Dropdown */}
-                  <div className="space-y-2">
-                    <Label>Despesas ({selectedSplitIds.length})</Label>
-                    <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={comboboxOpen}
-                          className="w-full justify-between font-normal"
-                        >
-                          {selectedSplitIds.length > 0
-                            ? `${selectedSplitIds.length} item(ns) selecionado(s)`
-                            : "Selecione as despesas..."}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[350px] p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder="Buscar despesa..." />
-                          <CommandList>
-                            <CommandEmpty>Nenhuma despesa pendente.</CommandEmpty>
-                            <CommandGroup className="max-h-[200px] overflow-auto">
-                              {pendingSplits?.map((split: any) => (
-                                <CommandItem
-                                  key={split.id}
-                                  value={split.id + split.expenses?.title} // Search key
-                                  onSelect={() => toggleSplitSelection(split.id)}
-                                  className="cursor-pointer"
-                                >
-                                  <div
-                                    className={cn(
-                                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                                      selectedSplitIds.includes(split.id)
-                                        ? "bg-primary text-primary-foreground"
-                                        : "opacity-50 [&_svg]:invisible"
-                                    )}
-                                  >
-                                    <Check className={cn("h-4 w-4")} />
-                                  </div>
-                                  <div className="flex flex-1 justify-between items-center gap-2 overflow-hidden">
-                                    <span className="truncate">{split.expenses?.title}</span>
-                                    <span className="text-muted-foreground whitespace-nowrap">R$ {Number(split.amount).toFixed(2)}</span>
-                                  </div>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+            {!isAdmin && (pendingSplits?.length ?? 0) > 0 && (
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2 h-10"><Plus className="h-4 w-4" /> Enviar Pagamento</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md overflow-visible">
+                  <DialogHeader>
+                    <DialogTitle className="font-serif">Enviar Comprovante</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                      <Label>Despesas ({selectedSplitIds.length})</Label>
+                      <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" role="combobox" aria-expanded={comboboxOpen} className="w-full justify-between font-normal">
+                            {selectedSplitIds.length > 0 ? `${selectedSplitIds.length} item(ns) selecionado(s)` : "Selecione as despesas..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[350px] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Buscar despesa..." />
+                            <CommandList>
+                              <CommandEmpty>Nenhuma despesa pendente.</CommandEmpty>
+                              <CommandGroup className="max-h-[200px] overflow-auto">
+                                {pendingSplits?.map((split: any) => (
+                                  <CommandItem key={split.id} value={split.id + split.expenses?.title} onSelect={() => toggleSplitSelection(split.id)} className="cursor-pointer">
+                                    <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", selectedSplitIds.includes(split.id) ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
+                                      <Check className={cn("h-4 w-4")} />
+                                    </div>
+                                    <div className="flex flex-1 justify-between items-center gap-2 overflow-hidden">
+                                      <span className="truncate">{split.expenses?.title}</span>
+                                      <span className="text-muted-foreground whitespace-nowrap">R$ {Number(split.amount).toFixed(2)}</span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Valor Total (R$)</Label>
+                      <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={selectedSplitIds.length > 1} className={selectedSplitIds.length > 1 ? "bg-muted font-bold" : ""} />
+                      {selectedSplitIds.length > 1 && <p className="text-[10px] text-muted-foreground">Soma automática das despesas selecionadas.</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Comprovante *</Label>
+                      <Input type="file" accept="image/*,.pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} />
+                      <p className="text-xs text-muted-foreground">Foto ou PDF do comprovante de pagamento</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Observações (opcional)</Label>
+                      <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex: Pix enviado às 14h" />
+                    </div>
+                    <Button onClick={handleSubmitPayment} disabled={saving} className="w-full">
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                      Enviar Pagamento
+                    </Button>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Valor Total (R$)</Label>
-                    <Input 
-                      type="number" 
-                      value={amount} 
-                      onChange={(e) => setAmount(e.target.value)} 
-                      disabled={selectedSplitIds.length > 1} // Disable manual edit if multiple items (prevents partial payment logic issues)
-                      className={selectedSplitIds.length > 1 ? "bg-muted font-bold" : ""}
-                    />
-                    {selectedSplitIds.length > 1 && (
-                      <p className="text-[10px] text-muted-foreground">Soma automática das despesas selecionadas.</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Comprovante *</Label>
-                    <Input type="file" accept="image/*,.pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} />
-                    <p className="text-xs text-muted-foreground">Foto ou PDF do comprovante de pagamento</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Observações (opcional)</Label>
-                    <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex: Pix enviado às 14h" />
-                  </div>
-
-                  <Button onClick={handleSubmitPayment} disabled={saving} className="w-full">
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                    Enviar Pagamento
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-      </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+        }
+      />
 
       <div className="text-sm text-muted-foreground">
         Exibindo competência: <strong>{format(cycleStart, "dd/MM")}</strong> até <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong>
       </div>
 
-      <Tabs defaultValue={isAdmin ? "pending" : "all"}>
-        <TabsList>
-          {isAdmin && <TabsTrigger value="pending">Pendentes</TabsTrigger>}
-          <TabsTrigger value="all">Todos</TabsTrigger>
+      {!heroCompact && (
+        <TabsList className={tabListClass}>
+          {isAdmin && <TabsTrigger value="pending" className={tabTriggerClass}>Pendentes</TabsTrigger>}
+          <TabsTrigger value="all" className={tabTriggerClass}>Todos</TabsTrigger>
         </TabsList>
+      )}
 
-        {isAdmin && (
-          <TabsContent value="pending" className="space-y-3 mt-4">
-            {payments?.filter((p) => p.status === "pending").length === 0 && (
-              <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum pagamento pendente nesta competência.</CardContent></Card>
-            )}
-            {payments?.filter((p) => p.status === "pending").map((p: any) => (
-              <PaymentCard key={p.id} payment={p} isAdmin onConfirm={handleConfirm} />
-            ))}
-          </TabsContent>
-        )}
-
-        <TabsContent value="all" className="space-y-3 mt-4">
-          {payments?.length === 0 && (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum pagamento registrado nesta competência.</CardContent></Card>
+      {isAdmin && (
+        <TabsContent value="pending" className="space-y-3 mt-4">
+          {payments?.filter((p) => p.status === "pending").length === 0 && (
+            <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum pagamento pendente nesta competência.</CardContent></Card>
           )}
-          {payments?.map((p: any) => (
-            <PaymentCard key={p.id} payment={p} isAdmin={isAdmin} onConfirm={handleConfirm} />
+          {payments?.filter((p) => p.status === "pending").map((p: any) => (
+            <PaymentCard key={p.id} payment={p} isAdmin onConfirm={handleConfirm} />
           ))}
         </TabsContent>
-      </Tabs>
+      )}
+
+      <TabsContent value="all" className="space-y-3 mt-4">
+        {payments?.length === 0 && (
+          <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum pagamento registrado nesta competência.</CardContent></Card>
+        )}
+        {payments?.map((p: any) => (
+          <PaymentCard key={p.id} payment={p} isAdmin={isAdmin} onConfirm={handleConfirm} />
+        ))}
+      </TabsContent>
     </div>
+    </Tabs>
   );
 }
 

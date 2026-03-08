@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -254,7 +255,7 @@ export default function Polls() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <ScrollRevealGroup preset="blur-slide" className="space-y-4">
           {polls.map((poll) => {
             const isOpen = poll.status === "open";
             const canManage = poll.created_by === user?.id || isAdmin;
@@ -334,7 +335,7 @@ export default function Polls() {
               </Card>
             );
           })}
-        </div>
+        </ScrollRevealGroup>
       )}
     </div>
   );

@@ -31,10 +31,12 @@ export function RepublicTab({
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* KPI Cards */}
-        <Card className={`col-span-1 lg:col-span-2 relative overflow-hidden transition-all ${isLate && totalCollectivePendingPrevious > 0 ? "border-destructive bg-destructive/5" : ""}`}>
+        <Card className={`col-span-1 lg:col-span-2 relative overflow-hidden border-l-4 ${isLate && totalCollectivePendingPrevious > 0 ? "border-l-destructive" : "border-l-primary"} bg-card shadow-sm`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Meu Rateio (Pendente)</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full ${isLate && totalCollectivePendingPrevious > 0 ? "bg-destructive/10" : "bg-primary/10"}`}>
+              <DollarSign className={`h-4 w-4 ${isLate && totalCollectivePendingPrevious > 0 ? "text-destructive" : "text-primary"}`} />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-foreground">R$ {totalCollectivePendingPrevious.toFixed(2)}</div>
@@ -65,24 +67,28 @@ export function RepublicTab({
           </CardContent>
         </Card>
 
-        <Card className="col-span-1">
+        <Card className="col-span-1 border-l-4 border-l-secondary bg-card shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total da Casa</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary">
+              <Receipt className="h-4 w-4 text-secondary-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {totalMonthExpenses.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-foreground">R$ {totalMonthExpenses.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground mt-1">Soma de todas despesas coletivas</p>
           </CardContent>
         </Card>
 
-        <Card className="col-span-1">
+        <Card className="col-span-1 border-l-4 border-l-warning bg-card shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Estoque Crítico</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10">
+              <Package className="h-4 w-4 text-warning" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">--</div>
+            <div className="text-2xl font-bold text-foreground">--</div>
             <Button variant="link" className="h-auto p-0 text-xs text-primary mt-1" asChild>
               <Link to="/inventory">Ver estoque →</Link>
             </Button>

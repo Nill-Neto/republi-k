@@ -23,6 +23,8 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Pin, Trash2, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 
 interface BulletinPost {
   id: string;
@@ -113,15 +115,16 @@ export default function Bulletin() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-serif">Mural de Avisos</h1>
-          <p className="text-muted-foreground mt-1">Comunicados e recados para a república.</p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Novo Aviso</Button>
-          </DialogTrigger>
+      <PageHero
+        title="Mural de Avisos"
+        subtitle="Comunicados e recados para a república."
+        tone="primary"
+        icon={<MessageSquare className="h-4 w-4" />}
+        actions={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-2" />Novo Aviso</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Publicar Aviso</DialogTitle></DialogHeader>
             <div className="space-y-4">
@@ -133,8 +136,9 @@ export default function Bulletin() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       {posts.length === 0 ? (
         <Card>
@@ -144,7 +148,7 @@ export default function Bulletin() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <ScrollRevealGroup preset="blur-slide" className="space-y-4">
           {posts.map((post) => (
             <Card key={post.id} className={post.pinned ? "border-primary/50 bg-primary/5" : ""}>
               <CardHeader className="pb-2">
@@ -191,7 +195,7 @@ export default function Bulletin() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </ScrollRevealGroup>
       )}
     </div>
   );

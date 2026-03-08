@@ -9,7 +9,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) navigate("/", { replace: true });
+    if (!loading && user) navigate("/dashboard", { replace: true });
   }, [user, loading, navigate]);
 
   const features = [

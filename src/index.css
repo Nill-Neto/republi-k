@@ -5,11 +5,16 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   :root {
     /* Professional Light Theme with Vivid Accents */
     
     /* Main Background: Very light cool gray/blue tint for depth */
-    --background: 210 40% 98%;
+    --background: 220 14% 86%;
     /* Main Text: Deep Navy for high contrast and softer than pure black */
     --foreground: 222 47% 11%;
 

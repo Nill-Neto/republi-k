@@ -26,12 +26,15 @@ import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Plus, Trash2, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 
 export default function ShoppingLists() {
   const { membership, user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [openNew, setOpenNew] = useState(false);
+  const [heroCompact, setHeroCompact] = useState(false);
   const [newList, setNewList] = useState({ name: "", list_type: "collective" });
   const [selectedList, setSelectedList] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState("");
@@ -153,17 +156,31 @@ export default function ShoppingLists() {
   const currentList = lists.find((l) => l.id === selectedList);
   const purchasedCount = listItems.filter((i) => i.purchased).length;
 
+  const tabTriggerClass = "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-foreground/60 text-xs font-semibold px-3 py-1.5 rounded-md transition-all";
+  const tabListClass = "w-full justify-start overflow-x-auto bg-muted/50 rounded-lg p-1 h-auto gap-1";
+
+  const compactTabsList = !selectedList ? (
+    <TabsList className={tabListClass}>
+      <TabsTrigger value="active" className={tabTriggerClass}>Ativas ({activeLists.length})</TabsTrigger>
+      <TabsTrigger value="completed" className={tabTriggerClass}>Concluídas ({completedLists.length})</TabsTrigger>
+    </TabsList>
+  ) : undefined;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-serif">Listas de Compras</h1>
-          <p className="text-muted-foreground text-sm">Coletivas e individuais</p>
-        </div>
-        <Dialog open={openNew} onOpenChange={setOpenNew}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" />Nova lista</Button>
-          </DialogTrigger>
+    <Tabs defaultValue="active">
+    <div className="space-y-4">
+      <PageHero
+        title="Listas de Compras"
+        subtitle="Coletivas e individuais"
+        compactTabs={compactTabsList}
+        onCompactChange={setHeroCompact}
+        tone="primary"
+        icon={<ShoppingCart className="h-4 w-4" />}
+        actions={
+          <Dialog open={openNew} onOpenChange={setOpenNew}>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-2 h-4 w-4" />Nova lista</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle className="font-serif">Nova lista de compras</DialogTitle></DialogHeader>
             <div className="space-y-4">
@@ -180,8 +197,9 @@ export default function ShoppingLists() {
               <Button className="w-full" disabled={!newList.name.trim()} onClick={() => createList.mutate()}>Criar lista</Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       {selectedList && currentList ? (
         <div className="space-y-4">
@@ -256,11 +274,13 @@ export default function ShoppingLists() {
           </div>
         </div>
       ) : (
-        <Tabs defaultValue="active">
-          <TabsList>
-            <TabsTrigger value="active">Ativas ({activeLists.length})</TabsTrigger>
-            <TabsTrigger value="completed">Concluídas ({completedLists.length})</TabsTrigger>
-          </TabsList>
+        <>
+          {!heroCompact && (
+            <TabsList className={tabListClass}>
+              <TabsTrigger value="active" className={tabTriggerClass}>Ativas ({activeLists.length})</TabsTrigger>
+              <TabsTrigger value="completed" className={tabTriggerClass}>Concluídas ({completedLists.length})</TabsTrigger>
+            </TabsList>
+          )}
           <TabsContent value="active" className="space-y-3 mt-4">
             {activeLists.length === 0 ? (
               <Card><CardContent className="py-10 text-center text-muted-foreground">Nenhuma lista ativa.</CardContent></Card>
@@ -292,8 +312,9 @@ export default function ShoppingLists() {
               </Card>
             ))}
           </TabsContent>
-        </Tabs>
+        </>
       )}
     </div>
+    </Tabs>
   );
 }

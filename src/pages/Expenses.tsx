@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { parseLocalDate } from "@/lib/utils";
+import { parseLocalDate, cn } from "@/lib/utils";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,6 +41,9 @@ import {
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCycleDates } from "@/hooks/useCycleDates";
+import { PageHero } from "@/components/layout/PageHero";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { Receipt } from "lucide-react";
 
 const CATEGORIES = [
   { value: "rent", label: "Aluguel" },
@@ -102,6 +105,7 @@ export default function Expenses() {
 
   // UI State
   const [activeTab, setActiveTab] = useState("all");
+  const [heroCompact, setHeroCompact] = useState(false);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -592,34 +596,52 @@ export default function Expenses() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-serif">Despesas</h1>
-          <p className="text-muted-foreground mt-1">Gestão financeira do grupo</p>
-        </div>
+  const tabTriggerClass = "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-foreground/60 text-xs font-semibold px-3 py-1.5 rounded-md transition-all";
+  const tabListClass = "w-full justify-start overflow-x-auto bg-muted/50 rounded-lg p-1 h-auto gap-1";
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
-              {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+  const compactTabsList = (
+    <TabsList className={tabListClass}>
+      <TabsTrigger value="all" className={tabTriggerClass}>Todas</TabsTrigger>
+      <TabsTrigger value="mine" className={tabTriggerClass}>Minhas</TabsTrigger>
+      <TabsTrigger value="collective" className={tabTriggerClass}>Coletivas</TabsTrigger>
+      <TabsTrigger value="recurring" className={cn(tabTriggerClass, "gap-1.5")}>
+        <RefreshCw className="h-3 w-3" /> Recorrentes
+      </TabsTrigger>
+    </TabsList>
+  );
+
+  return (
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+    <div className="space-y-4">
+      <PageHero
+        compactTabs={compactTabsList}
+        onCompactChange={setHeroCompact}
+        title="Despesas"
+        subtitle="Gestão financeira do grupo"
+        tone="primary"
+        icon={<Receipt className="h-4 w-4" />}
+        actions={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
+                {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextMonth}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextMonth}>
-              <ChevronRight className="h-4 w-4" />
+            <Button className="gap-2 h-10" onClick={() => { resetForm(); setOpen(true); }}>
+              <Plus className="h-4 w-4" /> Nova Despesa
             </Button>
           </div>
+        }
+      />
 
-          <Button className="gap-2 h-10" onClick={() => { resetForm(); setOpen(true); }}>
-            <Plus className="h-4 w-4" /> Nova Despesa
-          </Button>
-        </div>
-
-        {/* Edit form dialog */}
-        <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>
+      {/* Edit form dialog */}
+      <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-serif">
@@ -842,84 +864,53 @@ export default function Expenses() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
 
       <div className="text-sm text-muted-foreground">
         Exibindo competência: <strong>{format(cycleStart, "dd/MM")}</strong> até{" "}
         <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="all">Todas</TabsTrigger>
-          <TabsTrigger value="mine">Minhas</TabsTrigger>
-          <TabsTrigger value="collective">Coletivas</TabsTrigger>
-          <TabsTrigger value="recurring" className="gap-2">
+      {!heroCompact && (
+        <TabsList className={tabListClass}>
+          <TabsTrigger value="all" className={tabTriggerClass}>Todas</TabsTrigger>
+          <TabsTrigger value="mine" className={tabTriggerClass}>Minhas</TabsTrigger>
+          <TabsTrigger value="collective" className={tabTriggerClass}>Coletivas</TabsTrigger>
+          <TabsTrigger value="recurring" className={cn(tabTriggerClass, "gap-1.5")}>
             <RefreshCw className="h-3 w-3" /> Recorrentes
           </TabsTrigger>
         </TabsList>
+      )}
 
-        <TabsContent value="all" className="space-y-3 mt-4">
-          {filteredAll.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa encontrada nesta competência.</p>}
-          {filteredAll.map((e: any) => (
-            <ExpenseCard
-              key={e.id}
-              expense={e}
-              userId={user?.id}
-              isAdmin={isAdmin}
-              cards={cards}
-              onEdit={() => handleEditClick(e)}
-              onDelete={() => handleDeleteClick(e)}
-            />
-          ))}
-        </TabsContent>
+      <TabsContent value="all" className="space-y-3 mt-4">
+        {filteredAll.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa encontrada nesta competência.</p>}
+        {filteredAll.map((e: any) => (
+          <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => handleEditClick(e)} onDelete={() => handleDeleteClick(e)} />
+        ))}
+      </TabsContent>
 
-        <TabsContent value="mine" className="space-y-3 mt-4">
-          {filteredMine.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa individual encontrada nesta competência.</p>}
-          {filteredMine.map((e: any) => (
-            <ExpenseCard
-              key={e.id}
-              expense={e}
-              userId={user?.id}
-              isAdmin={isAdmin}
-              cards={cards}
-              onEdit={() => handleEditClick(e)}
-              onDelete={() => handleDeleteClick(e)}
-            />
-          ))}
-        </TabsContent>
+      <TabsContent value="mine" className="space-y-3 mt-4">
+        {filteredMine.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa individual encontrada nesta competência.</p>}
+        {filteredMine.map((e: any) => (
+          <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => handleEditClick(e)} onDelete={() => handleDeleteClick(e)} />
+        ))}
+      </TabsContent>
 
-        <TabsContent value="collective" className="space-y-3 mt-4">
-          {filteredCollective.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa coletiva encontrada nesta competência.</p>}
-          {filteredCollective.map((e: any) => (
-            <ExpenseCard
-              key={e.id}
-              expense={e}
-              userId={user?.id}
-              isAdmin={isAdmin}
-              cards={cards}
-              onEdit={() => handleEditClick(e)}
-              onDelete={() => handleDeleteClick(e)}
-            />
-          ))}
-        </TabsContent>
+      <TabsContent value="collective" className="space-y-3 mt-4">
+        {filteredCollective.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa coletiva encontrada nesta competência.</p>}
+        {filteredCollective.map((e: any) => (
+          <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => handleEditClick(e)} onDelete={() => handleDeleteClick(e)} />
+        ))}
+      </TabsContent>
 
-        <TabsContent value="recurring" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-4">Modelos de despesas que se repetem (não dependem do filtro de mês).</p>
-          {!recurringExpenses?.length && <p className="text-center text-muted-foreground py-8">Nenhuma recorrência configurada.</p>}
-          {recurringExpenses?.map((r: any) => (
-            <RecurringCard
-              key={r.id}
-              recurring={r}
-              isAdmin={isAdmin}
-              userId={user?.id}
-              onEdit={() => openEditRecurring(r)}
-              onDelete={() => deleteRecurring.mutate(r.id)}
-            />
-          ))}
-        </TabsContent>
-      </Tabs>
+      <TabsContent value="recurring" className="space-y-3 mt-4">
+        <p className="text-xs text-muted-foreground mb-4">Modelos de despesas que se repetem (não dependem do filtro de mês).</p>
+        {!recurringExpenses?.length && <p className="text-center text-muted-foreground py-8">Nenhuma recorrência configurada.</p>}
+        {recurringExpenses?.map((r: any) => (
+          <RecurringCard key={r.id} recurring={r} isAdmin={isAdmin} userId={user?.id} onEdit={() => openEditRecurring(r)} onDelete={() => deleteRecurring.mutate(r.id)} />
+        ))}
+      </TabsContent>
     </div>
+    </Tabs>
   );
 }
 
