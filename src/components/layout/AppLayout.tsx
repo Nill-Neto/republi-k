@@ -226,7 +226,7 @@ export function AppLayout() {
           </>
         )}
 
-        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 pt-1 md:px-8 md:pt-2 bg-background relative">
+        <main ref={mainRef} className="flex-1 overflow-x-hidden overflow-y-auto p-4 pt-1 md:px-8 md:pt-2 bg-background relative">
           {/* Decorative background — radial gradients + blurred shapes */}
           <div className="pointer-events-none absolute inset-0 -z-10 [background:radial-gradient(125%_125%_at_50%_0%,transparent_40%,hsl(var(--primary)/0.08)_100%)]" />
           <div className="pointer-events-none absolute -top-24 -right-24 -z-10 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
