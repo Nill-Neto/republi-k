@@ -456,7 +456,7 @@ export default function Dashboard() {
         onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
       />
 
-      <Tabs defaultValue={isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic")} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6">
           {!isPersonalFinancePage && isAdmin && (
             <TabsTrigger value="admin" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
