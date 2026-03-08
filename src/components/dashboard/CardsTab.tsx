@@ -85,6 +85,8 @@ export function CardsTab({
   const [hoveredSegmentLabel, setHoveredSegmentLabel] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<any | null>(null);
   const [addCardOpen, setAddCardOpen] = useState(false);
+  const [editCardOpen, setEditCardOpen] = useState(false);
+  const [deletingCard, setDeletingCard] = useState<any | null>(null);
 
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardSchema),
