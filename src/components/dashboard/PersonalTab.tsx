@@ -60,7 +60,7 @@ export function PersonalTab({
   const cashExpenses = myPersonalExpenses.filter((e: any) => e.payment_method !== 'credit_card');
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {/* Total Comprometido (Mês) */}
