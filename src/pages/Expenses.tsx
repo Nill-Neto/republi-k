@@ -953,7 +953,7 @@ function ExpenseCard({ expense, userId, isAdmin, cards, onEdit, onDelete }: any)
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-2">
               <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" /> {format(new Date(expense.purchase_date || expense.created_at), "dd/MM/yyyy")}
+                <Calendar className="h-3 w-3" /> {format(parseLocalDate(expense.purchase_date || expense.created_at), "dd/MM/yyyy")}
               </span>
               {expense.payment_method === "credit_card" && (
                 <span>
