@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, CalendarClock, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
@@ -19,6 +19,7 @@ interface DashboardHeaderProps {
   cycleLimitDate: Date;
   onNextMonth: () => void;
   onPrevMonth: () => void;
+  compactTabs?: ReactNode;
 }
 
 export function DashboardHeader({
