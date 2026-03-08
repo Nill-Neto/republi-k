@@ -27,9 +27,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Bulletin = lazy(() => import("./pages/Bulletin"));
 const HouseRules = lazy(() => import("./pages/HouseRules"));
 const Polls = lazy(() => import("./pages/Polls"));
-const CreditCards = lazy(() => import("./pages/CreditCards"));
 const PersonalDashboard = lazy(() => import("./pages/PersonalDashboard"));
-const Bills = lazy(() => import("./pages/Bills"));
 
 const queryClient = new QueryClient();
 
