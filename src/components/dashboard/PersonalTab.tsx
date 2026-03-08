@@ -349,7 +349,7 @@ export function PersonalTab({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">R$ {totalSpentCompetence.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-foreground">R$ {totalSpentCompetence.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground mt-1">Comprometido + À Vista.</p>
           </CardContent>
         </Card>
