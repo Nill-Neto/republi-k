@@ -152,18 +152,20 @@ export function PersonalTab({
         </Card>
 
         {/* Rateio em aberto (competência atual) */}
-        <Card className={`${totalCollectivePendingCurrent > 0 ? "border-amber-500/30 bg-amber-500/5" : ""}`}>
+        <Card className={`border-l-4 ${totalCollectivePendingCurrent > 0 ? "border-l-warning" : "border-l-muted"} bg-card shadow-sm`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className={`text-sm font-medium ${totalCollectivePendingCurrent > 0 ? "text-amber-700" : "text-muted-foreground"}`}>
-              Rateio em aberto (competência atual)
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Rateio em Aberto (Atual)
             </CardTitle>
-            <Users className={`h-4 w-4 ${totalCollectivePendingCurrent > 0 ? "text-amber-700" : "text-muted-foreground"}`} />
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full ${totalCollectivePendingCurrent > 0 ? "bg-warning/10" : "bg-muted"}`}>
+              <Users className={`h-4 w-4 ${totalCollectivePendingCurrent > 0 ? "text-warning" : "text-muted-foreground"}`} />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${totalCollectivePendingCurrent > 0 ? "text-amber-700" : ""}`}>
+            <div className={`text-2xl font-bold ${totalCollectivePendingCurrent > 0 ? "text-warning" : "text-foreground"}`}>
               R$ {totalCollectivePendingCurrent.toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Exibe somente itens da competência vigente.</p>
+            <p className="text-xs text-muted-foreground mt-1">Somente itens da competência vigente.</p>
             {collectivePendingCurrent.length > 0 && (
               <Dialog open={isCurrentCollectiveOpen} onOpenChange={setIsCurrentCollectiveOpen}>
                 <DialogTrigger asChild>
