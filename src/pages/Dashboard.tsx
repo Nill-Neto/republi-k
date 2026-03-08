@@ -38,18 +38,6 @@ export default function Dashboard() {
     setActiveTab(isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic"));
   }, [isPersonalFinancePage, isAdmin]);
 
-  const availableTabs = useMemo(() => {
-    if (isPersonalFinancePage) return ["personal", "cards"] as const;
-    if (isAdmin) return ["admin", "republic"] as const;
-    return ["republic"] as const;
-  }, [isPersonalFinancePage, isAdmin]);
-
-  const [activeTab, setActiveTab] = useState<string>(availableTabs[0]);
-
-  useEffect(() => {
-    setActiveTab(availableTabs[0]);
-  }, [availableTabs]);
-
   // --- Group Settings & Initial Date Logic ---
   const { data: groupSettings } = useQuery({
     queryKey: ["group-settings-dashboard", membership?.group_id],
