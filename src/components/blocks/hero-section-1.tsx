@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, ChevronRight, Menu, X, Zap, Shield, Globe, Star, Layers, Code2 } from 'lucide-react'
+import { ArrowRight, ChevronRight, Menu, X, Home, Users, Shield, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AnimatedGroup } from '@/components/ui/animated-group'
 import { TextEffect } from '@/components/ui/text-effect'
@@ -41,12 +41,12 @@ export function HeroSection() {
                             <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
                                 <AnimatedGroup preset="fade">
                                     <Link
-                                        to="#"
+                                        to="/login"
                                         className="hover:bg-muted bg-muted/50 group mx-auto flex w-fit items-center gap-4 rounded-full border border-border p-1 pl-4 shadow-md shadow-primary/5 transition-colors duration-300"
                                     >
-                                        <span className="text-foreground text-sm">Introducing Support for AI Models</span>
+                                        <span className="text-foreground text-sm">Gestão inteligente de moradias</span>
                                         <span className="bg-primary text-primary-foreground block rounded-full px-2 py-0.5 text-xs">
-                                            What's new <ChevronRight className="ml-1 inline h-3 w-3" />
+                                            Comece agora <ChevronRight className="ml-1 inline h-3 w-3" />
                                         </span>
                                     </Link>
                                 </AnimatedGroup>
@@ -55,10 +55,10 @@ export function HeroSection() {
                                     preset="fade"
                                     per="word"
                                     as="h1"
-                                    className="mt-8 text-balance text-4xl font-bold md:text-6xl lg:text-7xl text-foreground"
+                                    className="mt-8 text-balance text-4xl font-serif md:text-6xl lg:text-7xl text-foreground"
                                     delay={0.2}
                                 >
-                                    Modern Solutions for Customer Engagement
+                                    Simplifique a vida na sua república
                                 </TextEffect>
 
                                 <TextEffect
@@ -68,7 +68,7 @@ export function HeroSection() {
                                     delay={0.5}
                                     className="mx-auto mt-8 max-w-2xl text-balance text-lg text-muted-foreground"
                                 >
-                                    Highly customizable components for building modern websites and applications that look and feel the way you mean it.
+                                    Controle despesas, rateios, pagamentos e convivência em um só lugar. Transparência total para todos os moradores.
                                 </TextEffect>
 
                                 <AnimatedGroup
@@ -76,14 +76,18 @@ export function HeroSection() {
                                     className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row"
                                 >
                                     <div key="cta-1">
-                                        <Button size="lg" className="rounded-xl px-5">
-                                            <span className="text-nowrap">Start Building</span>
-                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                        <Button size="lg" className="rounded-xl px-5" asChild>
+                                            <Link to="/login">
+                                                <span className="text-nowrap">Entrar no Republi-K</span>
+                                                <ArrowRight className="ml-2 h-4 w-4" />
+                                            </Link>
                                         </Button>
                                     </div>
                                     <div key="cta-2">
-                                        <Button size="lg" variant="ghost" className="rounded-xl px-5">
-                                            <span className="text-nowrap">Request a demo</span>
+                                        <Button size="lg" variant="ghost" className="rounded-xl px-5" asChild>
+                                            <a href="#features">
+                                                <span className="text-nowrap">Conheça os recursos</span>
+                                            </a>
                                         </Button>
                                     </div>
                                 </AnimatedGroup>
@@ -96,8 +100,8 @@ export function HeroSection() {
                         >
                             <div key="hero-img" className="relative">
                                 <img
-                                    src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=2878&q=80"
-                                    alt="Dashboard preview"
+                                    src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=2878&q=80"
+                                    alt="Moradia compartilhada"
                                     className="w-full rounded-2xl"
                                 />
                                 <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-border"></div>
@@ -106,37 +110,52 @@ export function HeroSection() {
                     </div>
                 </section>
 
-                <section className="py-16 md:py-32">
+                <section id="features" className="py-16 md:py-32">
                     <div className="mx-auto max-w-5xl px-6">
                         <div className="mx-auto max-w-xl text-center">
-                            <span className="text-muted-foreground font-medium">Meet Our Customers</span>
+                            <span className="text-muted-foreground font-medium">Por que usar o Republi-K?</span>
                             <p className="mt-2 text-balance text-lg font-semibold text-foreground">
-                                Trusted by innovative teams worldwide
+                                Tudo o que você precisa para gerenciar sua moradia
                             </p>
                         </div>
 
-                        <div className="mx-auto mt-12 flex max-w-4xl flex-wrap items-center justify-center gap-x-12 gap-y-8 text-muted-foreground/60">
-                            <Zap className="h-8 w-auto" />
-                            <Shield className="h-7 w-auto" />
-                            <Globe className="h-7 w-auto" />
-                            <Star className="h-7 w-auto" />
-                            <Layers className="h-7 w-auto" />
-                            <Code2 className="h-8 w-auto" />
-                            <Zap className="h-7 w-auto" />
-                            <Shield className="h-8 w-auto" />
+                        <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                            {[
+                                { icon: Home, label: 'Gestão de moradia', desc: 'Despesas coletivas e individuais' },
+                                { icon: Users, label: 'Rateio justo', desc: 'Divisão igualitária ou por peso' },
+                                { icon: Shield, label: 'Prestação de contas', desc: 'Comprovantes e relatórios' },
+                                { icon: BarChart3, label: 'Dashboards', desc: 'Métricas em tempo real' },
+                            ].map((f) => (
+                                <div
+                                    key={f.label}
+                                    className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card/60 p-6 text-center shadow-sm backdrop-blur-sm"
+                                >
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                                        <f.icon className="h-6 w-6" />
+                                    </div>
+                                    <p className="font-medium text-foreground">{f.label}</p>
+                                    <p className="text-sm text-muted-foreground">{f.desc}</p>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </section>
+
+                <footer className="border-t border-border py-8">
+                    <div className="mx-auto max-w-7xl px-6 text-center">
+                        <p className="text-xs text-muted-foreground">
+                            © {new Date().getFullYear()} Republi-K. Todos os direitos reservados.
+                        </p>
+                    </div>
+                </footer>
             </main>
         </>
     )
 }
 
 const menuItems = [
-    { name: 'Features', href: '#link' },
-    { name: 'Solution', href: '#link' },
-    { name: 'Pricing', href: '#link' },
-    { name: 'About', href: '#link' },
+    { name: 'Recursos', href: '#features' },
+    { name: 'Entrar', href: '/login' },
 ]
 
 const HeroHeader = () => {
@@ -165,8 +184,8 @@ const HeroHeader = () => {
                 >
                     <div className="relative flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Link to="/" aria-label="Home">
-                                <Logo />
+                            <Link to="/" aria-label="Home" className="text-2xl font-serif text-foreground">
+                                Republi-K
                             </Link>
 
                             <button
@@ -215,45 +234,22 @@ const HeroHeader = () => {
                             </ul>
 
                             <div className="mt-6 flex flex-col gap-3 border-t border-border pt-6">
-                                <Button variant="ghost" size="sm" asChild>
-                                    <Link to="/login">Login</Link>
-                                </Button>
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link to="/login">Sign Up</Link>
-                                </Button>
                                 <Button size="sm" asChild>
-                                    <Link to="/login">Get Started</Link>
+                                    <Link to="/login">Entrar</Link>
                                 </Button>
                             </div>
                         </div>
 
                         {/* Desktop CTA */}
                         <div className="hidden lg:flex lg:items-center lg:gap-2">
-                            <Button variant="ghost" size="sm" asChild>
-                                <Link to="/login">Login</Link>
-                            </Button>
-                            <Button variant="outline" size="sm" asChild>
-                                <Link to="/login">Sign Up</Link>
-                            </Button>
                             <Button size="sm" asChild>
-                                <Link to="/login">Get Started</Link>
+                                <Link to="/login">Entrar</Link>
                             </Button>
                         </div>
                     </div>
                 </div>
             </nav>
         </header>
-    )
-}
-
-const Logo = ({ className }: { className?: string }) => {
-    return (
-        <svg className={cn("h-7 w-auto", className)} viewBox="0 0 100 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="2" y="5" width="20" height="20" rx="4" className="fill-primary" />
-            <rect x="8" y="10" width="8" height="4" rx="1" className="fill-primary-foreground" />
-            <rect x="8" y="16" width="5" height="4" rx="1" className="fill-primary-foreground" />
-            <text x="28" y="22" className="fill-foreground" fontFamily="system-ui" fontWeight="700" fontSize="16">Brand</text>
-        </svg>
     )
 }
 

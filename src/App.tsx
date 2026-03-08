@@ -10,6 +10,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 
 import Login from "./pages/Login";
 
+const Index = lazy(() => import("./pages/Index"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const AcceptInvite = lazy(() => import("./pages/AcceptInvite"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -40,10 +41,13 @@ const App = () => (
         <AuthProvider>
           <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
             <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/invite" element={<AcceptInvite />} />
 
+              {/* Authenticated routes */}
               <Route
                 element={
                   <ProtectedRoute>
@@ -51,7 +55,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               >
-                <Route path="/" element={<Dashboard key="dashboard-general" />} />
+                <Route path="/dashboard" element={<Dashboard key="dashboard-general" />} />
                 <Route path="/expenses" element={<Expenses />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/recurring" element={<RecurringExpenses />} />

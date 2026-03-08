@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { label: "Início", icon: LayoutDashboard, path: "/" },
+  { label: "Início", icon: LayoutDashboard, path: "/dashboard" },
   { label: "Despesas", icon: Receipt, path: "/expenses" },
   { label: "Pagar", icon: CreditCard, path: "/payments" },
   { label: "Estoque", icon: Package, path: "/inventory" },

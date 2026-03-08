@@ -39,7 +39,7 @@ const mainNavGroups = [
   {
     title: "Moradia",
     items: [
-      { to: "/", icon: LayoutDashboard, label: "Painel Geral" },
+      { to: "/dashboard", icon: LayoutDashboard, label: "Painel Geral" },
       { to: "/expenses", icon: Receipt, label: "Despesas" },
       { to: "/payments", icon: CreditCard, label: "Pagamentos" },
       { to: "/inventory", icon: Package, label: "Estoque" },
@@ -78,7 +78,7 @@ export function AppLayout() {
   const sidebarGroups = isAdmin ? [...mainNavGroups, adminGroup] : mainNavGroups;
 
   const Logo = () => (
-    <Link to="/" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
+    <Link to="/dashboard" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
         R
       </div>
