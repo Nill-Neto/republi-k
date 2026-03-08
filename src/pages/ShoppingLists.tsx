@@ -26,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Plus, Trash2, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 
 export default function ShoppingLists() {
   const { membership, user } = useAuth();
