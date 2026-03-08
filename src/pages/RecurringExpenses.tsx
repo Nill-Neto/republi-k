@@ -25,6 +25,8 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, RefreshCw, Calendar, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PageHero } from "@/components/layout/PageHero";
+import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 
 const CATEGORIES = [
   { value: "rent", label: "Aluguel" },
