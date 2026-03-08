@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
+import { parseLocalDate } from "@/lib/utils";
 import {
   Users, ArrowRight, RefreshCw, DollarSign, AlertTriangle,
   TrendingUp, Receipt, Settings, ClipboardList, BarChart3,

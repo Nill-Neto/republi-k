@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, L
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { CHART_COLORS, CATEGORY_COLORS } from "@/constants/categories";
+import { parseLocalDate } from "@/lib/utils";
 
 interface RepublicTabProps {
   collectiveExpenses: any[];

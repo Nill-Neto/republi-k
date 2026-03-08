@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveCont
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
 import { CHART_COLORS, CATEGORY_COLORS, getCategoryLabel } from "@/constants/categories";
 import { 
