@@ -220,7 +220,7 @@ export function PersonalTab({
               <div className="mt-2">
                 <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="link" className="h-auto p-0 text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                    <Button variant="outline" size="sm" className="mt-1 h-7 text-xs gap-1.5">
                       <List className="h-3 w-3" /> Ver lista ({individualPending.length})
                     </Button>
                   </DialogTrigger>
