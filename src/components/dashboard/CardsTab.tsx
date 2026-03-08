@@ -204,7 +204,7 @@ export function CardsTab({
                       </div>
                     </div>
                   </CardContent>
-                </button>
+                </Card>
               );
             })}
             

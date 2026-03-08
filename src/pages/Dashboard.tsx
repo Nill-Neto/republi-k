@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,30 +31,6 @@ export default function Dashboard() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [rateioScope, setRateioScope] = useState<RateioScope>("previous");
-
-  const [activeTab, setActiveTab] = useState<string>(isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic"));
-
-  useEffect(() => {
-    setActiveTab(isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic"));
-  }, [isPersonalFinancePage, isAdmin]);
-
-  const firstAvailableTab = useMemo(() => {
-    if (isPersonalFinancePage) return "personal";
-    if (isAdmin) return "admin";
-    return "republic";
-  }, [isPersonalFinancePage, isAdmin]);
-
-  const firstAvailableTab = useMemo(() => {
-    if (isPersonalFinancePage) return "personal";
-    if (isAdmin) return "admin";
-    return "republic";
-  }, [isPersonalFinancePage, isAdmin]);
-
-  const firstAvailableTab = useMemo(() => {
-    if (isPersonalFinancePage) return "personal";
-    if (isAdmin) return "admin";
-    return "republic";
-  }, [isPersonalFinancePage, isAdmin]);
 
   // --- Group Settings & Initial Date Logic ---
   const { data: groupSettings } = useQuery({
