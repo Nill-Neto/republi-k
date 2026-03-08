@@ -280,7 +280,8 @@ export default function RecurringExpenses() {
               </div>
             </DialogContent>
           </Dialog>
-      </div>
+        }
+      />
 
       {recurring?.length === 0 && (
         <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhuma recorrência configurada.</CardContent></Card>
