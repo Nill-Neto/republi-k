@@ -287,7 +287,7 @@ export default function RecurringExpenses() {
         <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhuma recorrência configurada.</CardContent></Card>
       )}
 
-      <div className="space-y-3">
+      <ScrollRevealGroup preset="blur-slide" className="space-y-3">
         {recurring?.map((r) => {
           const catLabel = CATEGORIES.find((c) => c.value === r.category)?.label ?? r.category;
           return (
