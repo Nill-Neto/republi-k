@@ -281,10 +281,12 @@ export function PersonalTab({
         </Card>
 
         {/* Gastos à Vista */}
-        <Card>
+        <Card className="border-l-4 border-l-secondary bg-card shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Gastos à Vista</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary">
+              <DollarSign className="h-4 w-4 text-secondary-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">R$ {totalPersonalCash.toFixed(2)}</div>
