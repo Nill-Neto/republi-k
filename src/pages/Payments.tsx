@@ -220,6 +220,7 @@ export default function Payments() {
     <div className="space-y-6">
       <PageHero
         compactTabs={compactTabsList}
+        onCompactChange={setHeroCompact}
         title="Pagamentos"
         subtitle="Histórico de pagamentos."
         tone="primary"
