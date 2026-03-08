@@ -868,7 +868,6 @@ export default function Expenses() {
       </div>
 
       {!heroCompact && (
-      <div>
         <TabsList className="w-full justify-start overflow-x-auto bg-transparent gap-2 h-auto p-0">
           <TabsTrigger value="all" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Todas</TabsTrigger>
           <TabsTrigger value="mine" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs font-semibold px-2.5 py-1.5 rounded-md">Minhas</TabsTrigger>
@@ -877,69 +876,36 @@ export default function Expenses() {
             <RefreshCw className="h-3 w-3" /> Recorrentes
           </TabsTrigger>
         </TabsList>
-      </div>
       )}
 
-        <TabsContent value="all" className="space-y-3 mt-4">
-          {filteredAll.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa encontrada nesta competência.</p>}
-          {filteredAll.map((e: any) => (
-            <ExpenseCard
-              key={e.id}
-              expense={e}
-              userId={user?.id}
-              isAdmin={isAdmin}
-              cards={cards}
-              onEdit={() => handleEditClick(e)}
-              onDelete={() => handleDeleteClick(e)}
-            />
-          ))}
-        </TabsContent>
+      <TabsContent value="all" className="space-y-3 mt-4">
+        {filteredAll.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa encontrada nesta competência.</p>}
+        {filteredAll.map((e: any) => (
+          <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => handleEditClick(e)} onDelete={() => handleDeleteClick(e)} />
+        ))}
+      </TabsContent>
 
-        <TabsContent value="mine" className="space-y-3 mt-4">
-          {filteredMine.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa individual encontrada nesta competência.</p>}
-          {filteredMine.map((e: any) => (
-            <ExpenseCard
-              key={e.id}
-              expense={e}
-              userId={user?.id}
-              isAdmin={isAdmin}
-              cards={cards}
-              onEdit={() => handleEditClick(e)}
-              onDelete={() => handleDeleteClick(e)}
-            />
-          ))}
-        </TabsContent>
+      <TabsContent value="mine" className="space-y-3 mt-4">
+        {filteredMine.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa individual encontrada nesta competência.</p>}
+        {filteredMine.map((e: any) => (
+          <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => handleEditClick(e)} onDelete={() => handleDeleteClick(e)} />
+        ))}
+      </TabsContent>
 
-        <TabsContent value="collective" className="space-y-3 mt-4">
-          {filteredCollective.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa coletiva encontrada nesta competência.</p>}
-          {filteredCollective.map((e: any) => (
-            <ExpenseCard
-              key={e.id}
-              expense={e}
-              userId={user?.id}
-              isAdmin={isAdmin}
-              cards={cards}
-              onEdit={() => handleEditClick(e)}
-              onDelete={() => handleDeleteClick(e)}
-            />
-          ))}
-        </TabsContent>
+      <TabsContent value="collective" className="space-y-3 mt-4">
+        {filteredCollective.length === 0 && <p className="text-center text-muted-foreground py-8">Nenhuma despesa coletiva encontrada nesta competência.</p>}
+        {filteredCollective.map((e: any) => (
+          <ExpenseCard key={e.id} expense={e} userId={user?.id} isAdmin={isAdmin} cards={cards} onEdit={() => handleEditClick(e)} onDelete={() => handleDeleteClick(e)} />
+        ))}
+      </TabsContent>
 
-        <TabsContent value="recurring" className="space-y-3 mt-4">
-          <p className="text-xs text-muted-foreground mb-4">Modelos de despesas que se repetem (não dependem do filtro de mês).</p>
-          {!recurringExpenses?.length && <p className="text-center text-muted-foreground py-8">Nenhuma recorrência configurada.</p>}
-          {recurringExpenses?.map((r: any) => (
-            <RecurringCard
-              key={r.id}
-              recurring={r}
-              isAdmin={isAdmin}
-              userId={user?.id}
-              onEdit={() => openEditRecurring(r)}
-              onDelete={() => deleteRecurring.mutate(r.id)}
-            />
-          ))}
-        </TabsContent>
-      </div>
+      <TabsContent value="recurring" className="space-y-3 mt-4">
+        <p className="text-xs text-muted-foreground mb-4">Modelos de despesas que se repetem (não dependem do filtro de mês).</p>
+        {!recurringExpenses?.length && <p className="text-center text-muted-foreground py-8">Nenhuma recorrência configurada.</p>}
+        {recurringExpenses?.map((r: any) => (
+          <RecurringCard key={r.id} recurring={r} isAdmin={isAdmin} userId={user?.id} onEdit={() => openEditRecurring(r)} onDelete={() => deleteRecurring.mutate(r.id)} />
+        ))}
+      </TabsContent>
     </div>
     </Tabs>
   );
