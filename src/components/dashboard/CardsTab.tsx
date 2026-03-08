@@ -216,7 +216,7 @@ export function CardsTab({
             <CardTitle className="text-sm font-medium">Composição da Fatura</CardTitle>
             <PieChartIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="h-auto md:h-[280px] flex flex-col md:flex-row items-center justify-center gap-8 p-6">
+          <CardContent className="h-auto flex flex-col md:flex-row items-center justify-center gap-6 p-4 md:p-6">
             {donutData.length > 0 ? (
               <>
                 <div className="relative">
