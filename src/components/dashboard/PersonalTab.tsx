@@ -281,6 +281,52 @@ export function PersonalTab({
           <CardContent>
             <div className="text-2xl font-bold">R$ {totalPersonalCash.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground mt-1">Dinheiro, Pix ou Débito.</p>
+            {cashExpenses.length > 0 && (
+              <Dialog open={isCashDetailOpen} onOpenChange={setIsCashDetailOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="link" className="h-auto p-0 mt-2 text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                    <List className="h-3 w-3" /> Ver itens ({cashExpenses.length})
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden flex flex-col max-h-[80vh]">
+                  <DialogHeader className="p-4 border-b shrink-0">
+                    <DialogTitle className="text-base font-medium flex items-center gap-2">
+                      Gastos à Vista
+                      <Badge variant="outline" className="ml-auto font-normal">
+                        Total: R$ {totalPersonalCash.toFixed(2)}
+                      </Badge>
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="flex-1 overflow-hidden">
+                    <ScrollArea className="h-full">
+                      <div className="divide-y">
+                        {cashExpenses.map((e: any) => {
+                          const methodMap: Record<string, string> = { cash: "Dinheiro", pix: "Pix", debit: "Débito" };
+                          return (
+                            <div key={e.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                              <div className="min-w-0 pr-4">
+                                <p className="text-sm font-medium truncate">{e.title}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                    {getCategoryLabel(e.category)}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {e.purchase_date ? format(new Date(e.purchase_date), "dd/MM/yyyy") : ""} • {methodMap[e.payment_method] || e.payment_method}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="font-semibold text-sm tabular-nums whitespace-nowrap">
+                                R$ {Number(e.amount).toFixed(2)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
           </CardContent>
         </Card>
 
