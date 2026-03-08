@@ -173,12 +173,10 @@ export function CardsTab({
             {creditCards.map(card => {
               const billValue = cardsBreakdown[card.id] || 0;
               return (
-                <button
+                <Card
                   key={card.id}
-                  type="button"
+                  className="flex flex-col justify-between hover:shadow-md transition-all border-l-4 border-l-primary/80 cursor-pointer"
                   onClick={() => setSelectedCard(card)}
-                  aria-label={`Abrir fatura do cartão ${card.label}`}
-                  className="rounded-lg border bg-card text-card-foreground shadow-sm flex flex-col justify-between hover:shadow-md transition-all border-l-4 border-l-primary/80 cursor-pointer text-left"
                 >
                   <CardHeader className="pb-2 pt-4 px-4">
                     <div className="flex justify-between items-start">

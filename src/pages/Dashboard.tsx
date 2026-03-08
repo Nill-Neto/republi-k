@@ -13,7 +13,7 @@ import { RepublicTab } from "@/components/dashboard/RepublicTab";
 import { PersonalTab } from "@/components/dashboard/PersonalTab";
 import { CardsTab } from "@/components/dashboard/CardsTab";
 import { AdminTab } from "@/components/dashboard/AdminTab";
-import { PaymentDialogs } from "@/components/dashboard/PaymentDialogs";
+import { PaymentDialogs, type RateioScope } from "@/components/dashboard/PaymentDialogs";
 import { getCategoryLabel } from "@/constants/categories";
 import { useLocation } from "react-router-dom";
 
@@ -30,6 +30,25 @@ export default function Dashboard() {
   const [selectedIndividualSplit, setSelectedIndividualSplit] = useState<any>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [rateioScope, setRateioScope] = useState<RateioScope>("previous");
+
+  const [activeTab, setActiveTab] = useState<string>(isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic"));
+
+  useEffect(() => {
+    setActiveTab(isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic"));
+  }, [isPersonalFinancePage, isAdmin]);
+
+  const firstAvailableTab = useMemo(() => {
+    if (isPersonalFinancePage) return "personal";
+    if (isAdmin) return "admin";
+    return "republic";
+  }, [isPersonalFinancePage, isAdmin]);
+
+  const firstAvailableTab = useMemo(() => {
+    if (isPersonalFinancePage) return "personal";
+    if (isAdmin) return "admin";
+    return "republic";
+  }, [isPersonalFinancePage, isAdmin]);
 
   const firstAvailableTab = useMemo(() => {
     if (isPersonalFinancePage) return "personal";
@@ -297,16 +316,6 @@ export default function Dashboard() {
     return `${competenceYear}-${String(competenceMonth).padStart(2, "0")}`;
   };
 
-  const formatCompetenceKey = (key: string) => {
-    const [yearRaw, monthRaw] = key.split("-");
-    const year = Number(yearRaw);
-    const month = Number(monthRaw);
-
-    if (!year || !month) return "Sem competência";
-
-    return `${String(month).padStart(2, "0")}/${year}`;
-  };
-
   const collectivePending = pendingSplits
     .filter((s: any) => s.expenses?.expense_type === "collective")
     .map((split: any) => ({
@@ -316,12 +325,8 @@ export default function Dashboard() {
 
   const collectivePendingCurrent = collectivePending.filter((s: any) => s.competenceKey === currentCompetenceKey);
   const collectivePendingPrevious = collectivePending.filter((s: any) => !s.competenceKey || s.competenceKey < currentCompetenceKey);
-  const collectivePendingFuture = collectivePending.filter((s: any) => !!s.competenceKey && s.competenceKey > currentCompetenceKey);
-
   const totalCollectivePendingPrevious = collectivePendingPrevious.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
   const totalCollectivePendingCurrent = collectivePendingCurrent.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
-  const totalCollectivePendingFuture = collectivePendingFuture.reduce((sum: number, s: any) => sum + Number(s.amount), 0);
-
   const collectivePendingPreviousByCompetence = useMemo(() => {
     const grouped = collectivePendingPrevious.reduce((acc: Record<string, any[]>, item: any) => {
       const purchaseDate = item.expenses?.purchase_date ? new Date(item.expenses.purchase_date) : null;
@@ -399,7 +404,7 @@ export default function Dashboard() {
   }, [billInstallments]);
 
 
-  const handlePayRateio = async () => {
+  const handlePayRateio = async (scope: RateioScope) => {
     if (!receiptFile) return;
     setSaving(true);
     try {
@@ -408,13 +413,17 @@ export default function Dashboard() {
       await supabase.storage.from("receipts").upload(path, receiptFile);
       const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(path);
 
+      const amount = scope === "previous" ? totalCollectivePendingPrevious : totalCollectivePendingCurrent;
+
       await supabase.from("payments").insert({
         group_id: membership!.group_id,
         expense_split_id: null,
         paid_by: user!.id,
-        amount: totalCollectivePendingPrevious,
+        amount,
         receipt_url: urlData.publicUrl,
-        notes: `Pagamento de Rateio - ${format(currentDate, "MMMM/yyyy", { locale: ptBR })}`
+        notes: scope === "previous"
+          ? `Pagamento de Rateio - competências anteriores (${format(currentDate, "MMMM/yyyy", { locale: ptBR })})`
+          : `Pagamento de Rateio - competência atual (${format(currentDate, "MMMM/yyyy", { locale: ptBR })})`
       });
 
       toast({ title: "Pagamento enviado!" });
@@ -471,7 +480,7 @@ export default function Dashboard() {
         onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
       />
 
-      <Tabs defaultValue={firstAvailableTab} className="space-y-6">
+      <Tabs defaultValue={isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic")} className="space-y-6">
         <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6">
           {!isPersonalFinancePage && isAdmin && (
             <TabsTrigger value="admin" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 transition-all hover:text-primary">
@@ -517,51 +526,45 @@ export default function Dashboard() {
           </TabsContent>
         )}
 
-        {!isPersonalFinancePage && (
-          <TabsContent value="republic" className="space-y-6">
-            <RepublicTab
-              collectiveExpenses={collectiveExpenses}
-              totalMonthExpenses={totalMonthExpenses}
-              republicChartData={republicChartData}
-              totalCollectivePendingPrevious={totalCollectivePendingPrevious}
-              totalCollectivePendingCurrent={totalCollectivePendingCurrent}
-              isLate={isLate}
-              onPayRateio={() => setPayRateioOpen(true)}
-            />
-          </TabsContent>
-        )}
+        <TabsContent value="republic" className="space-y-6">
+          <RepublicTab
+            collectiveExpenses={collectiveExpenses}
+            totalMonthExpenses={totalMonthExpenses}
+            republicChartData={republicChartData}
+            totalCollectivePendingPrevious={totalCollectivePendingPrevious}
+            totalCollectivePendingCurrent={totalCollectivePendingCurrent}
+            isLate={isLate}
+            onPayRateio={(scope) => { setRateioScope(scope); setPayRateioOpen(true); }}
+          />
+        </TabsContent>
 
-        {isPersonalFinancePage && (
-          <>
-            <TabsContent value="personal" className="space-y-6">
-              <PersonalTab
-                totalIndividualPending={totalIndividualPending}
-                totalCollectivePendingPrevious={totalCollectivePendingPrevious}
-                totalCollectivePendingCurrent={totalCollectivePendingCurrent}
-                collectivePendingPreviousByCompetence={collectivePendingPreviousByCompetence}
-                collectivePendingCurrent={collectivePendingCurrent}
-                individualPending={individualPending}
-                totalPersonalCash={totalPersonalCash}
-                totalBill={totalBill}
-                totalUserExpenses={totalUserExpenses}
-                myCollectiveShare={myCollectiveShare}
-                personalChartData={personalChartData}
-                myPersonalExpenses={myPersonalExpenses}
-              />
-            </TabsContent>
+        <TabsContent value="personal" className="space-y-6">
+          <PersonalTab
+            totalIndividualPending={totalIndividualPending}
+            totalCollectivePendingPrevious={totalCollectivePendingPrevious}
+            totalCollectivePendingCurrent={totalCollectivePendingCurrent}
+            collectivePendingPreviousByCompetence={collectivePendingPreviousByCompetence}
+            collectivePendingCurrent={collectivePendingCurrent}
+            individualPending={individualPending}
+            totalPersonalCash={totalPersonalCash}
+            totalBill={totalBill}
+            totalUserExpenses={totalUserExpenses}
+            myCollectiveShare={myCollectiveShare}
+            personalChartData={personalChartData}
+            myPersonalExpenses={myPersonalExpenses}
+          />
+        </TabsContent>
 
-            <TabsContent value="cards" className="space-y-6">
-              <CardsTab 
-                totalBill={totalBill}
-                currentDate={currentDate}
-                cardsChartData={cardsChartData}
-                creditCards={creditCards}
-                cardsBreakdown={cardsBreakdown}
-                billInstallments={billInstallments}
-              />
-            </TabsContent>
-          </>
-        )}
+        <TabsContent value="cards" className="space-y-6">
+          <CardsTab 
+            totalBill={totalBill}
+            currentDate={currentDate}
+            cardsChartData={cardsChartData}
+            creditCards={creditCards}
+            cardsBreakdown={cardsBreakdown}
+            billInstallments={billInstallments}
+          />
+        </TabsContent>
       </Tabs>
 
       <PaymentDialogs
@@ -571,12 +574,11 @@ export default function Dashboard() {
         setPayIndividualOpen={setPayIndividualOpen}
         selectedIndividualSplit={selectedIndividualSplit}
         setSelectedIndividualSplit={setSelectedIndividualSplit}
-        totalCollectivePendingPrevious={totalCollectivePendingPrevious}
-        totalCollectivePendingCurrent={totalCollectivePendingCurrent}
-        totalCollectivePendingFuture={totalCollectivePendingFuture}
-        collectivePendingPrevious={collectivePendingPrevious}
-        collectivePendingCurrent={collectivePendingCurrent}
-        collectivePendingFuture={collectivePendingFuture}
+        collectivePendingByScope={{
+          previous: { total: totalCollectivePendingPrevious, items: collectivePendingPrevious },
+          current: { total: totalCollectivePendingCurrent, items: collectivePendingCurrent },
+        }}
+        rateioScope={rateioScope}
         individualPending={individualPending}
         currentDate={currentDate}
         onPayRateio={handlePayRateio}
