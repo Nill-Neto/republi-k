@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatedGroup } from "@/components/ui/animated-group";
 import { TextEffect } from "@/components/ui/text-effect";
-import { motion, type Variants, useMotionValueEvent, useScroll } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 interface PageHeroProps {
   title: string;
@@ -74,8 +74,9 @@ export function PageHero({
         className={cn(
           "relative overflow-hidden rounded-xl border transition-all duration-300 z-30",
           isCompact
-            ? "sticky top-0 bg-transparent backdrop-blur-xl shadow-lg p-3 sm:p-3"
-            : "bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-4 sm:p-5"
+            ? "sticky top-0 bg-black/80 dark:bg-transparent backdrop-blur-xl shadow-lg p-3 sm:p-3 border-white/10 dark:border-border"
+            : "bg-black/70 dark:bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-black/50 dark:supports-[backdrop-filter]:bg-card/60 p-4 sm:p-5 border-white/10 dark:border-border",
+          "text-white dark:text-foreground"
         )}
       >
         <motion.div
@@ -94,7 +95,7 @@ export function PageHero({
         >
           <div className="min-w-0">
             {(badge || icon) && !isCompact && (
-              <AnimatedGroup preset="fade" className="mb-3 flex items-center gap-2 text-muted-foreground">
+              <AnimatedGroup preset="fade" className="mb-3 flex items-center gap-2 text-white/70 dark:text-muted-foreground">
                 {icon ? <span className="shrink-0">{icon}</span> : null}
                 {badge ? <span>{badge}</span> : null}
               </AnimatedGroup>
@@ -102,8 +103,8 @@ export function PageHero({
 
             {isCompact ? (
               <div className="flex items-center gap-2 min-w-0">
-                {icon ? <span className="shrink-0 text-muted-foreground">{icon}</span> : null}
-                <h1 className="text-lg font-serif tracking-tight text-foreground truncate">
+                {icon ? <span className="shrink-0 text-white/70 dark:text-muted-foreground">{icon}</span> : null}
+                <h1 className="text-lg font-serif tracking-tight text-white dark:text-foreground truncate">
                   {title}
                 </h1>
               </div>
@@ -113,7 +114,7 @@ export function PageHero({
                   preset="blur"
                   per="word"
                   as="h1"
-                  className="text-3xl font-serif tracking-tight text-foreground"
+                  className="text-3xl font-serif tracking-tight text-white dark:text-foreground"
                   delay={0.1}
                 >
                   {title}
@@ -124,7 +125,7 @@ export function PageHero({
                     preset="fade"
                     per="word"
                     as="p"
-                    className="mt-1 text-sm text-muted-foreground sm:text-base"
+                    className="mt-1 text-sm text-white/70 dark:text-muted-foreground sm:text-base"
                     delay={0.3}
                   >
                     {subtitle}
@@ -149,7 +150,7 @@ export function PageHero({
 
         {/* Compact tabs — shown only when sticky */}
         {isCompact && compactTabs && (
-          <div className="mt-2 -mb-1 border-t border-border/40 pt-2">
+          <div className="mt-2 -mb-1 border-t border-white/10 dark:border-border/40 pt-2">
             {compactTabs}
           </div>
         )}

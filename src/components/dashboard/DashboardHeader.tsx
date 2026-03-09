@@ -66,8 +66,9 @@ export function DashboardHeader({
         className={cn(
           "relative overflow-hidden rounded-xl border transition-all duration-300 z-30",
           isCompact
-            ? "sticky top-0 bg-transparent backdrop-blur-xl shadow-lg p-3 sm:p-3"
-            : "bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-4 sm:p-5"
+            ? "sticky top-0 bg-black/80 dark:bg-transparent backdrop-blur-xl shadow-lg p-3 sm:p-3 border-white/10 dark:border-border"
+            : "bg-black/70 dark:bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-black/50 dark:supports-[backdrop-filter]:bg-card/60 p-4 sm:p-5 border-white/10 dark:border-border",
+          "text-white dark:text-foreground"
         )}
       >
         {/* Accent bar */}
@@ -88,7 +89,7 @@ export function DashboardHeader({
           {/* Left: Title + subtitle */}
           <div className="min-w-0">
             {isCompact ? (
-              <h1 className="text-lg font-serif tracking-tight text-foreground truncate">
+              <h1 className="text-lg font-serif tracking-tight text-white dark:text-foreground truncate">
                 {`Olá, ${userName?.split(" ")[0] ?? ""}`}
               </h1>
             ) : (
@@ -97,7 +98,7 @@ export function DashboardHeader({
                   preset="blur"
                   per="word"
                   as="h1"
-                  className="text-3xl font-serif text-foreground"
+                  className="text-3xl font-serif text-white dark:text-foreground"
                   delay={0.05}
                 >
                   {`Olá, ${userName?.split(" ")[0] ?? ""}`}
@@ -107,7 +108,7 @@ export function DashboardHeader({
                     preset="fade"
                     per="word"
                     as="p"
-                    className="text-muted-foreground mt-1"
+                    className="text-white/70 dark:text-muted-foreground mt-1"
                     delay={0.25}
                   >
                     {groupName}
@@ -119,19 +120,19 @@ export function DashboardHeader({
 
           {/* Right: Actions */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-            <div className="flex items-center bg-card/80 border rounded-lg p-1 shadow-sm h-10">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onPrevMonth}>
+            <div className="flex items-center bg-black/40 dark:bg-card/80 border border-white/10 dark:border-border rounded-lg p-1 shadow-sm h-10">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 hover:text-white dark:text-foreground dark:hover:bg-accent dark:hover:text-accent-foreground" onClick={onPrevMonth}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="px-3 text-sm font-medium min-w-[140px] text-center capitalize">
+              <div className="px-3 text-sm font-medium min-w-[140px] text-center capitalize text-white dark:text-foreground">
                 {format(currentDate, "MMMM yyyy", { locale: ptBR })}
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onNextMonth}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 hover:text-white dark:text-foreground dark:hover:bg-accent dark:hover:text-accent-foreground" onClick={onNextMonth}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
 
-            <Button variant="outline" className="relative h-10 gap-2 overflow-hidden" asChild>
+            <Button variant="outline" className="relative h-10 gap-2 overflow-hidden border-white/20 text-white hover:bg-white/10 hover:text-white dark:border-border dark:text-foreground dark:hover:bg-accent dark:hover:text-accent-foreground" asChild>
               <Link to="/expenses">
                 <div
                   className={cn(
@@ -155,11 +156,11 @@ export function DashboardHeader({
         {/* Badges — hidden when compact */}
         {!isCompact && (
           <AnimatedGroup preset="blur-slide" className="flex flex-wrap gap-2 mt-4">
-            <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm">
+            <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm border-white/20 text-white bg-black/20 dark:bg-transparent dark:border-border dark:text-foreground">
               <CalendarClock className="h-3.5 w-3.5 text-primary" />
               Competência: <strong>{format(cycleStart, "dd/MM")}</strong> a <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong>
             </Badge>
-            <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm">
+            <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm border-white/20 text-white bg-black/20 dark:bg-transparent dark:border-border dark:text-foreground">
               <Calendar className="h-3.5 w-3.5 text-destructive" />
               Pagar até: <strong>{format(cycleLimitDate, "dd/MM")}</strong>
             </Badge>
@@ -168,7 +169,7 @@ export function DashboardHeader({
 
         {/* Compact tabs — shown only when sticky */}
         {isCompact && compactTabs && (
-          <div className="mt-2 -mb-1 border-t border-border/40 pt-2">
+          <div className="mt-2 -mb-1 border-t border-white/10 dark:border-border/40 pt-2">
             {compactTabs}
           </div>
         )}
