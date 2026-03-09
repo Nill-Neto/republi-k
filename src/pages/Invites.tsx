@@ -8,10 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Send, Copy, RefreshCw, UserPlus } from "lucide-react";
+import { Loader2, Send, Copy, RefreshCw, UserPlus, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { PageHero } from "@/components/layout/PageHero";
-import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
 
 const emailSchema = z.string().trim().email("Email inválido").max(255);
 
