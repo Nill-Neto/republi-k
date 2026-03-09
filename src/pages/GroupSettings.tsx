@@ -15,7 +15,10 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Save, SlidersHorizontal, User, Mail, Phone, Shield, FileText, FileSpreadsheet } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
-import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
+import { ScrollReveal, ScrollRevealGroup } from "@/components/ui/scroll-reveal";
+
+const tabTriggerClass = "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-foreground/60 text-xs font-semibold px-3 py-1.5 rounded-md transition-all";
+const tabListClass = "w-full justify-start overflow-x-auto bg-muted/50 rounded-lg p-1 h-auto gap-1";
 
 function AccountTab() {
   const { profile, membership, isAdmin, user, refreshProfile } = useAuth();
@@ -256,99 +259,117 @@ function GroupTab() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Dados da moradia</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>Nome</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label>Descrição</Label>
-          <Input value={description} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label>Regra de rateio</Label>
-          <Select value={splittingRule} onValueChange={setSplittingRule}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="equal">Divisão igualitária</SelectItem>
-              <SelectItem value="percentage">Por peso/percentual</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+    <ScrollReveal preset="blur-slide">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Dados da moradia</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Dia de Fechamento</Label>
-            <Input type="number" min="1" max="31" value={closingDay} onChange={(e) => setClosingDay(e.target.value)} />
-            <p className="text-[10px] text-muted-foreground">
-              Lançamentos após este dia entram na competência do mês seguinte.
-            </p>
+            <Label>Nome</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Dia de Vencimento</Label>
-            <Input type="number" min="1" max="31" value={dueDay} onChange={(e) => setDueDay(e.target.value)} />
-            <p className="text-[10px] text-muted-foreground font-medium text-warning-foreground">
-              Data limite para pagamento será <strong>um dia antes</strong> (Dia {parseInt(dueDay) - 1 || 30}). 
-              No dia {dueDay} já será considerado atraso.
-            </p>
+            <Label>Descrição</Label>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
-        </div>
-
-        <div className="flex items-center justify-between rounded-lg border p-4">
-          <div className="space-y-0.5">
-            <Label className="text-sm font-medium">Participar dos rateios</Label>
-            <p className="text-xs text-muted-foreground">
-              Desative se você apenas administra o grupo e não participa das despesas.
-            </p>
+          <div className="space-y-2">
+            <Label>Regra de rateio</Label>
+            <Select value={splittingRule} onValueChange={setSplittingRule}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="equal">Divisão igualitária</SelectItem>
+                <SelectItem value="percentage">Por peso/percentual</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Switch checked={participatesInSplits} onCheckedChange={setParticipatesInSplits} />
-        </div>
 
-        <Button onClick={() => updateGroup.mutate()} disabled={updateGroup.isPending} className="w-full">
-          {updateGroup.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-          Salvar Alterações
-        </Button>
-      </CardContent>
-    </Card>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Dia de Fechamento</Label>
+              <Input type="number" min="1" max="31" value={closingDay} onChange={(e) => setClosingDay(e.target.value)} />
+              <p className="text-[10px] text-muted-foreground">
+                Lançamentos após este dia entram na competência do mês seguinte.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Dia de Vencimento</Label>
+              <Input type="number" min="1" max="31" value={dueDay} onChange={(e) => setDueDay(e.target.value)} />
+              <p className="text-[10px] text-muted-foreground font-medium text-warning-foreground">
+                Data limite para pagamento será <strong>um dia antes</strong> (Dia {parseInt(dueDay) - 1 || 30}). 
+                No dia {dueDay} já será considerado atraso.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Participar dos rateios</Label>
+              <p className="text-xs text-muted-foreground">
+                Desative se você apenas administra o grupo e não participa das despesas.
+              </p>
+            </div>
+            <Switch checked={participatesInSplits} onCheckedChange={setParticipatesInSplits} />
+          </div>
+
+          <Button onClick={() => updateGroup.mutate()} disabled={updateGroup.isPending} className="w-full">
+            {updateGroup.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            Salvar Alterações
+          </Button>
+        </CardContent>
+      </Card>
+    </ScrollReveal>
   );
 }
 
 export default function GroupSettings() {
+  const [activeTab, setActiveTab] = useState("account");
+  const [heroCompact, setHeroCompact] = useState(false);
+
+  const compactTabsList = (
+    <TabsList className={tabListClass}>
+      <TabsTrigger value="account" className={tabTriggerClass}>
+        <User className="h-3.5 w-3.5 mr-1.5" /> Conta
+      </TabsTrigger>
+      <TabsTrigger value="group" className={tabTriggerClass}>
+        <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" /> Grupo
+      </TabsTrigger>
+    </TabsList>
+  );
+
   return (
-    <div className="space-y-4">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 animate-in fade-in duration-500">
       <PageHero
         title="Configurações"
         subtitle="Gerencie sua conta e o grupo."
         tone="primary"
         icon={<SlidersHorizontal className="h-4 w-4" />}
+        compactTabs={compactTabsList}
+        onCompactChange={setHeroCompact}
       />
 
-      <Tabs defaultValue="account" className="w-full">
-        <TabsList className="w-full">
-          <TabsTrigger value="account" className="flex-1 gap-2">
-            <User className="h-4 w-4" />
-            Conta
-          </TabsTrigger>
-          <TabsTrigger value="group" className="flex-1 gap-2">
-            <SlidersHorizontal className="h-4 w-4" />
-            Grupo
-          </TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        {!heroCompact && (
+          <TabsList className={tabListClass}>
+            <TabsTrigger value="account" className={tabTriggerClass}>
+              <User className="h-3.5 w-3.5 mr-1.5" /> Conta
+            </TabsTrigger>
+            <TabsTrigger value="group" className={tabTriggerClass}>
+              <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" /> Grupo
+            </TabsTrigger>
+          </TabsList>
+        )}
 
-        <TabsContent value="account">
+        <TabsContent value="account" className="space-y-4 mt-4">
           <AccountTab />
         </TabsContent>
 
-        <TabsContent value="group">
+        <TabsContent value="group" className="space-y-4 mt-4">
           <GroupTab />
         </TabsContent>
-      </Tabs>
-    </div>
+      </div>
+    </Tabs>
   );
 }
