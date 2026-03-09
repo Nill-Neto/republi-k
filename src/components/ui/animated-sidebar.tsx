@@ -78,11 +78,7 @@ export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
   );
 };
 
-export const DesktopSidebar = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof motion.div>) => {
+export const DesktopSidebar = ({ className, children, ...props }: React.ComponentProps<typeof motion.div>) => {
   const { open, setOpen, animate } = useSidebar();
 
   return (
@@ -103,55 +99,41 @@ export const DesktopSidebar = ({
   );
 };
 
-export const MobileSidebar = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<"div">) => {
+export const MobileSidebar = ({ className, children, ...props }: React.ComponentProps<"div">) => {
   const { open, setOpen } = useSidebar();
 
   return (
-    <>
-      <div
-        className={cn(
-          "flex h-10 w-full flex-row items-center justify-between bg-neutral-100 px-4 py-4 dark:bg-neutral-800 md:hidden",
-        )}
-        {...props}
-      >
-        <div className="z-20 flex w-full justify-end">
-          <Menu
-            className="cursor-pointer text-neutral-800 dark:text-neutral-200"
-            onClick={() => setOpen(!open)}
-          />
-        </div>
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              initial={{ x: "-100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "-100%", opacity: 0 }}
-              transition={{
-                duration: 0.3,
-                ease: "easeInOut",
-              }}
-              className={cn(
-                "fixed inset-0 z-[100] flex h-full w-full flex-col justify-between bg-white p-10 dark:bg-neutral-900",
-                className,
-              )}
-            >
-              <button
-                type="button"
-                className="absolute right-10 top-10 z-50 cursor-pointer text-neutral-800 dark:text-neutral-200"
-                onClick={() => setOpen(!open)}
-              >
-                <X />
-              </button>
-              {children}
-            </motion.div>
-          )}
-        </AnimatePresence>
+    <div
+      className={cn("flex h-10 w-full flex-row items-center justify-between bg-neutral-100 px-4 py-4 dark:bg-neutral-800 md:hidden")}
+      {...props}
+    >
+      <div className="z-20 flex w-full justify-end">
+        <Menu className="cursor-pointer text-neutral-800 dark:text-neutral-200" onClick={() => setOpen(!open)} />
       </div>
-    </>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ x: "-100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "-100%", opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className={cn(
+              "fixed inset-0 z-[100] flex h-full w-full flex-col justify-between bg-white p-10 dark:bg-neutral-900",
+              className,
+            )}
+          >
+            <button
+              type="button"
+              className="absolute right-10 top-10 z-50 cursor-pointer text-neutral-800 dark:text-neutral-200"
+              onClick={() => setOpen(!open)}
+            >
+              <X />
+            </button>
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -166,14 +148,7 @@ export const SidebarLink = ({
   const { open, animate } = useSidebar();
 
   return (
-    <Link
-      to={link.href}
-      className={cn(
-        "group/sidebar flex items-center justify-start gap-2 py-2",
-        className,
-      )}
-      {...props}
-    >
+    <Link to={link.href} className={cn("group/sidebar flex items-center justify-start gap-2 py-2", className)} {...props}>
       {link.icon}
       <motion.span
         animate={{
