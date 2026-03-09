@@ -31,6 +31,12 @@ export function GroupSwitcher() {
       <div className="hidden sm:flex items-center gap-2 border-l pl-4 min-w-0">
         <span className="text-xs font-medium text-muted-foreground/80 whitespace-nowrap">Moradia:</span>
         <span className="text-sm font-semibold truncate">{membership.group_name}</span>
+        {isAdmin && (
+          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => navigate("/groups/new")}>
+            <Plus className="h-3.5 w-3.5" />
+            <span className="sr-only">Criar novo grupo</span>
+          </Button>
+        )}
       </div>
     );
   }
