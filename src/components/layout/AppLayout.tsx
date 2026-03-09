@@ -217,7 +217,7 @@ export function AppLayout() {
 
       {/* Conteúdo Principal (Sidebar + Main) */}
       <div className="relative flex flex-1 overflow-hidden">
-        <Sidebar open={mobileMenuOpen} setOpen={setMobileMenuOpen}>
+        <Sidebar open={menuOpen} setOpen={setMenuOpen}>
           <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
             <SidebarContent />
           </SidebarBody>
