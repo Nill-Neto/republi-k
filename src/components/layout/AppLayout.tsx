@@ -102,7 +102,7 @@ export function AppLayout() {
       <div className="flex items-center h-14 shrink-0 px-4 md:hidden border-b border-sidebar-border">
          <span className="text-lg font-bold tracking-tight text-sidebar-foreground">Republi-K</span>
       </div>
-      <div className="flex-1 overflow-y-auto py-4 px-3">
+      <div className="flex-1 overflow-y-auto px-3 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <nav className="space-y-4">
           {sidebarGroups.map((group) => (
             <CollapsibleNavGroup 
