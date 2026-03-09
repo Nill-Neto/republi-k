@@ -7,11 +7,7 @@ import { GroupSwitcher } from "./GroupSwitcher";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { Button } from "@/components/ui/button";
 import { MenuToggleIcon } from "@/components/ui/menu-toggle-icon";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { TextRoll } from "@/components/ui/animated-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -30,29 +26,25 @@ import {
   MessageSquare,
   BookOpen,
   Vote,
-  ChevronDown,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Sidebar, SidebarBody } from "@/components/ui/animated-sidebar";
 
-const mainNavGroups = [
-  {
-    title: "Moradia",
-    items: [
-      { to: "/dashboard", icon: LayoutDashboard, label: "Painel Geral" },
-      { to: "/expenses", icon: Receipt, label: "Despesas" },
-      { to: "/payments", icon: CreditCard, label: "Pagamentos" },
-      { to: "/inventory", icon: Package, label: "Estoque" },
-      { to: "/shopping", icon: ShoppingCart, label: "Compras" },
-    ],
-  },
-  {
-    title: "Minhas Finanças",
-    items: [
-      { to: "/personal/financas", icon: LayoutDashboard, label: "Finanças Pessoais" },
-    ],
-  },
+const sidebarCoreItems = [
+  { to: "/dashboard", icon: LayoutDashboard, label: "Painel Geral" },
+  { to: "/expenses", icon: Receipt, label: "Despesas" },
+  { to: "/payments", icon: CreditCard, label: "Pagamentos" },
+  { to: "/inventory", icon: Package, label: "Estoque" },
+  { to: "/shopping", icon: ShoppingCart, label: "Compras" },
+  { to: "/personal/financas", icon: Wallet, label: "Minhas Finanças" },
+];
+
+const adminItems = [
+  { to: "/recurring", icon: RefreshCw, label: "Recorrências" },
+  { to: "/invites", icon: UserPlus, label: "Convites" },
+  { to: "/audit-log", icon: ScrollText, label: "Histórico" },
 ];
 
 const convenienceItems = [
@@ -61,15 +53,6 @@ const convenienceItems = [
   { to: "/polls", icon: Vote, label: "Votações" },
   { to: "/members", icon: Users, label: "Moradores" },
 ];
-
-const adminGroup = {
-  title: "Administração",
-  items: [
-    { to: "/recurring", icon: RefreshCw, label: "Recorrências" },
-    { to: "/invites", icon: UserPlus, label: "Convites" },
-    { to: "/audit-log", icon: ScrollText, label: "Histórico" },
-  ],
-};
 
 export function AppLayout() {
   const { isAdmin } = useAuth();
@@ -90,7 +73,7 @@ export function AppLayout() {
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const sidebarGroups = isAdmin ? [...mainNavGroups, adminGroup] : mainNavGroups;
+  const sidebarItems = isAdmin ? [...sidebarCoreItems, ...adminItems] : sidebarCoreItems;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -118,27 +101,29 @@ export function AppLayout() {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className={cn("flex-1 overflow-y-auto py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", menuOpen ? "px-3" : "px-2")}>
-        <nav className="space-y-4">
-          {sidebarGroups.map((group) => (
-            <CollapsibleNavGroup
-              key={group.title}
-              title={group.title}
-              items={group.items}
+      <div className={cn("flex-1 overflow-y-auto py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", menuOpen ? "px-3" : "px-2")}>
+        <nav className="space-y-1">
+          {sidebarItems.map((item) => (
+            <SidebarNavLink
+              key={item.to}
+              item={item}
               location={location}
-              onItemClick={() => setMenuOpen(false)} // Sempre fecha ao clicar num item
+              onClick={() => setMenuOpen(false)} // Sempre fecha ao clicar num item
               menuOpen={menuOpen}
             />
           ))}
 
-          <div className="md:hidden">
-            <CollapsibleNavGroup
-              title="Convivência"
-              items={convenienceItems}
-              location={location}
-              onItemClick={() => setMenuOpen(false)} // Sempre fecha ao clicar num item
-              menuOpen={menuOpen}
-            />
+          {/* Links de convivência aparecem na sidebar apenas em telas menores (mobile) */}
+          <div className="md:hidden pt-4 mt-4 border-t border-sidebar-border space-y-1">
+            {convenienceItems.map((item) => (
+              <SidebarNavLink
+                key={item.to}
+                item={item}
+                location={location}
+                onClick={() => setMenuOpen(false)} // Sempre fecha ao clicar num item
+                menuOpen={menuOpen}
+              />
+            ))}
           </div>
         </nav>
       </div>
@@ -228,7 +213,7 @@ export function AppLayout() {
             open={menuOpen} 
             setOpen={setMenuOpen}
           >
-            <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
+            <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl !max-w-[230px]">
               <SidebarContent />
             </SidebarBody>
           </Sidebar>
@@ -250,83 +235,67 @@ export function AppLayout() {
   );
 }
 
-function CollapsibleNavGroup({
-  title,
-  items,
+function SidebarNavLink({
+  item,
   location,
-  onItemClick,
+  onClick,
   menuOpen,
 }: {
-  title: string;
-  items: { to: string; icon: any; label: string }[];
+  item: { to: string; icon: any; label: string };
   location: any;
-  onItemClick?: () => void;
+  onClick: () => void;
   menuOpen: boolean;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
-
-  return (
-    <Collapsible open={menuOpen ? isOpen : true} onOpenChange={setIsOpen} className="space-y-1">
-      {menuOpen && (
-        <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-1 hover:bg-sidebar-accent/50 rounded-md transition-colors group cursor-pointer">
-          <h4 className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/50 group-hover:text-sidebar-foreground">
-            {title}
-          </h4>
-          <ChevronDown
-            className={cn(
-              "h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200",
-              isOpen && "rotate-180"
-            )}
-          />
-        </CollapsibleTrigger>
-      )}
-      <CollapsibleContent className="space-y-1 pt-1 data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
-        {items.map((item) => {
-          const isActive = location.pathname === item.to;
-          
-          const LinkContent = (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={onItemClick}
-              className={cn(
-                "group flex items-center gap-3 rounded-md py-2 text-sm font-medium transition-all relative overflow-hidden",
-                menuOpen ? "px-3" : "px-0 justify-center h-10 w-10 mx-auto",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm font-semibold"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-              )}
-            >
-              {isActive && (
-                <div className={cn("absolute left-0 bg-sidebar-primary", menuOpen ? "top-1/2 -translate-y-1/2 h-4 w-1 rounded-r-full" : "inset-y-0 w-1 rounded-r-md")} />
-              )}
-              <item.icon
-                className={cn(
-                  "shrink-0 transition-colors",
-                  menuOpen ? "h-4 w-4" : "h-5 w-5",
-                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground"
-                )}
-              />
-              {menuOpen && <span className="truncate">{item.label}</span>}
-            </Link>
-          );
-
-          if (!menuOpen) {
-            return (
-              <Tooltip key={item.to} delayDuration={0}>
-                <TooltipTrigger asChild>
-                  {LinkContent}
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={10} className="font-medium bg-sidebar text-sidebar-foreground border-sidebar-border">
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
-
-          return LinkContent;
-        })}
-      </CollapsibleContent>
-    </Collapsible>
+  const isActive = location.pathname === item.to;
+  
+  const LinkContent = (
+    <Link
+      to={item.to}
+      onClick={onClick}
+      className="block w-full outline-none"
+    >
+      <motion.div
+        initial="initial"
+        whileHover="hovered"
+        className={cn(
+          "group flex items-center gap-3 rounded-md py-2.5 text-sm font-medium transition-all relative overflow-hidden",
+          menuOpen ? "px-3" : "px-0 justify-center h-10 w-10 mx-auto",
+          isActive
+            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm font-semibold"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+        )}
+      >
+        {isActive && (
+          <div className={cn("absolute left-0 bg-sidebar-primary", menuOpen ? "inset-y-2 w-1 rounded-r-full" : "inset-y-0 w-1 rounded-r-md")} />
+        )}
+        <item.icon
+          className={cn(
+            "shrink-0 transition-colors relative z-10",
+            menuOpen ? "h-[18px] w-[18px]" : "h-5 w-5",
+            isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground"
+          )}
+        />
+        {menuOpen && (
+          <div className="flex-1 min-w-0">
+            <TextRoll className="w-full text-left tracking-wide">{item.label}</TextRoll>
+          </div>
+        )}
+      </motion.div>
+    </Link>
   );
+
+  if (!menuOpen) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          {LinkContent}
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={10} className="font-medium bg-sidebar text-sidebar-foreground border-sidebar-border">
+          {item.label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return LinkContent;
 }
