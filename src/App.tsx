@@ -29,6 +29,7 @@ const Bulletin = lazy(() => import("./pages/Bulletin"));
 const HouseRules = lazy(() => import("./pages/HouseRules"));
 const Polls = lazy(() => import("./pages/Polls"));
 const PersonalDashboard = lazy(() => import("./pages/PersonalDashboard"));
+const NewGroup = lazy(() => import("./pages/NewGroup"));
 
 const queryClient = new QueryClient();
 
