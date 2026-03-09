@@ -228,7 +228,7 @@ export function AppLayout() {
             open={menuOpen} 
             setOpen={setMenuOpen}
           >
-            <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
+            <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl !max-w-[230px]">
               <SidebarContent />
             </SidebarBody>
           </Sidebar>
