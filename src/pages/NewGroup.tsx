@@ -24,7 +24,6 @@ export default function NewGroup() {
   const [splittingRule, setSplittingRule] = useState<SplittingRule>("equal");
   const [closingDay, setClosingDay] = useState(1);
   const [dueDay, setDueDay] = useState(10);
-  const [adminParticipatesInSplits, setAdminParticipatesInSplits] = useState(true);
   const [address, setAddress] = useState<GroupAddress>({
     street: "",
     number: "",
@@ -109,15 +108,6 @@ export default function NewGroup() {
         })
         .eq("id", newGroupId);
       if (updateErr) throw updateErr;
-
-      if (user) {
-        const { error: membershipErr } = await supabase
-          .from("group_members")
-          .update({ participates_in_splits: adminParticipatesInSplits })
-          .eq("group_id", newGroupId)
-          .eq("user_id", user.id);
-        if (membershipErr) throw membershipErr;
-      }
 
       await refreshMembership();
       setActiveGroupId(newGroupId);
@@ -219,16 +209,6 @@ export default function NewGroup() {
                 No dia {dueDay} já será considerado atraso.
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <Label className="text-sm font-medium">Participar dos rateios</Label>
-              <p className="text-xs text-muted-foreground">
-                Desative se você apenas administra o grupo e não participa das despesas.
-              </p>
-            </div>
-            <Switch checked={adminParticipatesInSplits} onCheckedChange={setAdminParticipatesInSplits} />
           </div>
 
           <div className="flex gap-3">
