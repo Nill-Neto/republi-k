@@ -30,6 +30,7 @@ const HouseRules = lazy(() => import("./pages/HouseRules"));
 const Polls = lazy(() => import("./pages/Polls"));
 const PersonalDashboard = lazy(() => import("./pages/PersonalDashboard"));
 const NewGroup = lazy(() => import("./pages/NewGroup"));
+const SidebarDemoPage = lazy(() => import("./pages/SidebarDemoPage"));
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/invite" element={<AcceptInvite />} />
+              <Route path="/sidebar-demo" element={<SidebarDemoPage />} />
 
               {/* Authenticated routes */}
               <Route
