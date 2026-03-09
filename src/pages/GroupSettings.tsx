@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,9 +13,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Save, SlidersHorizontal, User, Mail, Phone, Shield, FileText, FileSpreadsheet } from "lucide-react";
+import { Loader2, Save, SlidersHorizontal, User, Mail, Phone, Shield, FileText, FileSpreadsheet, Upload, Check, MapPin } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
 import { ScrollReveal, ScrollRevealGroup } from "@/components/ui/scroll-reveal";
+import { formatCPF, isValidCPF } from "@/lib/cpf";
 
 const tabTriggerClass = "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-foreground/60 text-xs font-semibold px-3 py-1.5 rounded-md transition-all";
 const tabListClass = "w-full justify-start overflow-x-auto bg-muted/50 rounded-lg p-1 h-auto gap-1";
@@ -23,23 +24,123 @@ const tabListClass = "w-full justify-start overflow-x-auto bg-muted/50 rounded-l
 function AccountTab() {
   const { profile, membership, isAdmin, user, refreshProfile } = useAuth();
   const [name, setName] = useState(profile?.full_name ?? "");
+  const [nickname, setNickname] = useState(profile?.nickname ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [cpf, setCpf] = useState("");
+  const [cpfError, setCpfError] = useState("");
+  const [cpfLoaded, setCpfLoaded] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [generatingCsv, setGeneratingCsv] = useState(false);
 
+  // Document upload states
+  const [rgFront, setRgFront] = useState<File | null>(null);
+  const [rgBack, setRgBack] = useState<File | null>(null);
+  const [rgDigital, setRgDigital] = useState<File | null>(null);
+  const [hasExistingDocs, setHasExistingDocs] = useState({ front: false, back: false, digital: false });
+  const frontRef = useRef<HTMLInputElement>(null);
+  const backRef = useRef<HTMLInputElement>(null);
+  const digitalRef = useRef<HTMLInputElement>(null);
+
+  // Load CPF
+  useEffect(() => {
+    if (!user) return;
+    supabase.rpc("read_my_cpf").then(({ data }) => {
+      if (data) setCpf(formatCPF(data));
+      setCpfLoaded(true);
+    });
+    // Check existing docs
+    supabase.from("profile_sensitive").select("rg_front_url, rg_back_url, rg_digital_url").eq("user_id", user.id).single().then(({ data }) => {
+      if (data) {
+        setHasExistingDocs({
+          front: !!data.rg_front_url,
+          back: !!data.rg_back_url,
+          digital: !!data.rg_digital_url,
+        });
+      }
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (profile) {
+      setName(profile.full_name);
+      setNickname(profile.nickname ?? "");
+      setPhone(profile.phone ?? "");
+    }
+  }, [profile]);
+
+  const handleCpfChange = (value: string) => {
+    setCpf(formatCPF(value));
+    setCpfError("");
+  };
+
   const updateProfile = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      if (!user) return;
+
+      // Validate CPF if provided
+      const cleanedCpf = cpf.replace(/\D/g, "");
+      if (cleanedCpf.length > 0 && cleanedCpf.length !== 11) {
+        throw new Error("CPF deve ter 11 dígitos");
+      }
+      if (cleanedCpf.length === 11 && !isValidCPF(cleanedCpf)) {
+        throw new Error("CPF inválido");
+      }
+
+      // Update profile
+      const { error: profileErr } = await supabase
         .from("profiles")
-        .update({ full_name: name, phone: phone || null })
-        .eq("id", user!.id);
-      if (error) throw error;
+        .update({
+          full_name: name.trim(),
+          nickname: nickname.trim() || null,
+          phone: phone.trim() || null,
+        })
+        .eq("id", user.id);
+      if (profileErr) throw profileErr;
+
+      // Update CPF & docs if CPF is valid
+      if (cleanedCpf.length === 11) {
+        const docUpdates: Record<string, string | null> = {};
+
+        // Upload new docs
+        if (rgFront) {
+          const ext = rgFront.name.split(".").pop() || "jpg";
+          await supabase.storage.from("documents").upload(`${user.id}/rg-front.${ext}`, rgFront, { upsert: true });
+          docUpdates.rg_front_url = `${user.id}/rg-front.${ext}`;
+        }
+        if (rgBack) {
+          const ext = rgBack.name.split(".").pop() || "jpg";
+          await supabase.storage.from("documents").upload(`${user.id}/rg-back.${ext}`, rgBack, { upsert: true });
+          docUpdates.rg_back_url = `${user.id}/rg-back.${ext}`;
+        }
+        if (rgDigital) {
+          await supabase.storage.from("documents").upload(`${user.id}/rg-digital.pdf`, rgDigital, { upsert: true });
+          docUpdates.rg_digital_url = `${user.id}/rg-digital.pdf`;
+        }
+
+        const { error: cpfErr } = await supabase
+          .from("profile_sensitive")
+          .upsert({
+            user_id: user.id,
+            cpf: cleanedCpf,
+            ...docUpdates,
+          });
+        if (cpfErr) throw cpfErr;
+      }
     },
     onSuccess: async () => {
       await refreshProfile();
+      setRgFront(null);
+      setRgBack(null);
+      setRgDigital(null);
       toast({ title: "Perfil atualizado!" });
     },
-    onError: () => toast({ title: "Erro ao atualizar perfil", variant: "destructive" }),
+    onError: (err: any) => {
+      if (err.message?.includes("CPF")) {
+        setCpfError(err.message);
+      } else {
+        toast({ title: "Erro ao atualizar perfil", description: err.message, variant: "destructive" });
+      }
+    },
   });
 
   const generateReport = async (format: 'pdf' | 'csv') => {
@@ -111,6 +212,10 @@ function AccountTab() {
               <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-1" />
             </div>
             <div>
+              <Label className="flex items-center gap-2"><User className="h-4 w-4" />Apelido</Label>
+              <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Como prefere ser chamado" className="mt-1" />
+            </div>
+            <div>
               <Label className="flex items-center gap-2"><Mail className="h-4 w-4" />Email</Label>
               <Input value={profile?.email ?? ""} disabled className="mt-1" />
               <p className="text-xs text-muted-foreground mt-1">O email não pode ser alterado (vinculado ao Google)</p>
@@ -119,7 +224,55 @@ function AccountTab() {
               <Label className="flex items-center gap-2"><Phone className="h-4 w-4" />Telefone</Label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" className="mt-1" />
             </div>
-            <Button onClick={() => updateProfile.mutate()} disabled={updateProfile.isPending}>
+
+            <Separator />
+
+            {/* CPF */}
+            <div>
+              <Label>CPF</Label>
+              <Input
+                value={cpf}
+                onChange={(e) => handleCpfChange(e.target.value)}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                className={`mt-1 ${cpfError ? "border-destructive" : ""}`}
+              />
+              {cpfError && <p className="text-sm text-destructive mt-1">{cpfError}</p>}
+              <p className="text-xs text-muted-foreground mt-1">Visível apenas para você e o administrador do grupo.</p>
+            </div>
+
+            {/* RG Documents */}
+            <div className="space-y-3">
+              <Label>RG — Frente e Verso</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <input ref={frontRef} type="file" accept="image/*" className="hidden" onChange={(e) => setRgFront(e.target.files?.[0] || null)} />
+                  <Button type="button" variant={(rgFront || hasExistingDocs.front) ? "default" : "outline"} className="w-full gap-2 h-auto py-3" onClick={() => frontRef.current?.click()}>
+                    {(rgFront || hasExistingDocs.front) ? <Check className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
+                    <span className="text-xs">{rgFront ? "Novo ✓" : hasExistingDocs.front ? "Enviado ✓" : "Frente"}</span>
+                  </Button>
+                </div>
+                <div>
+                  <input ref={backRef} type="file" accept="image/*" className="hidden" onChange={(e) => setRgBack(e.target.files?.[0] || null)} />
+                  <Button type="button" variant={(rgBack || hasExistingDocs.back) ? "default" : "outline"} className="w-full gap-2 h-auto py-3" onClick={() => backRef.current?.click()}>
+                    {(rgBack || hasExistingDocs.back) ? <Check className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
+                    <span className="text-xs">{rgBack ? "Novo ✓" : hasExistingDocs.back ? "Enviado ✓" : "Verso"}</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Ou RG Digital (PDF)</Label>
+              <input ref={digitalRef} type="file" accept="application/pdf" className="hidden" onChange={(e) => setRgDigital(e.target.files?.[0] || null)} />
+              <Button type="button" variant={(rgDigital || hasExistingDocs.digital) ? "default" : "outline"} className="w-full gap-2" onClick={() => digitalRef.current?.click()}>
+                {(rgDigital || hasExistingDocs.digital) ? <Check className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                {rgDigital ? rgDigital.name : hasExistingDocs.digital ? "RG Digital enviado ✓" : "Selecionar PDF"}
+              </Button>
+            </div>
+
+            <Button onClick={() => updateProfile.mutate()} disabled={updateProfile.isPending} className="w-full">
+              {updateProfile.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               {updateProfile.isPending ? "Salvando..." : "Salvar alterações"}
             </Button>
           </div>
@@ -153,7 +306,7 @@ function AccountTab() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>Autenticação via Google OAuth 2.0</p>
-          <p>Seus dados sensíveis (CPF) são protegidos por RLS e validação server-side</p>
+          <p>Seus dados sensíveis (CPF) são protegidos por criptografia e validação server-side</p>
         </CardContent>
       </Card>
     </ScrollRevealGroup>
@@ -201,6 +354,16 @@ function GroupTab() {
   const [dueDay, setDueDay] = useState<string>("10");
   const [participatesInSplits, setParticipatesInSplits] = useState(true);
 
+  // Address fields
+  const [street, setStreet] = useState("");
+  const [streetNumber, setStreetNumber] = useState("");
+  const [complement, setComplement] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [fetchingCep, setFetchingCep] = useState(false);
+
   useEffect(() => {
     if (group) {
       setName(group.name);
@@ -208,6 +371,13 @@ function GroupTab() {
       setSplittingRule(group.splitting_rule);
       setClosingDay(String(group.closing_day || 1));
       setDueDay(String(group.due_day || 10));
+      setStreet(group.street ?? "");
+      setStreetNumber(group.street_number ?? "");
+      setComplement(group.complement ?? "");
+      setNeighborhood(group.neighborhood ?? "");
+      setCity(group.city ?? "");
+      setState(group.state ?? "");
+      setZipCode(group.zip_code ?? "");
     }
   }, [group]);
 
@@ -216,6 +386,28 @@ function GroupTab() {
       setParticipatesInSplits(myMembership.participates_in_splits);
     }
   }, [myMembership]);
+
+  const handleCepChange = async (value: string) => {
+    const cleaned = value.replace(/\D/g, "");
+    const formatted = cleaned.length > 5 ? `${cleaned.slice(0, 5)}-${cleaned.slice(5, 8)}` : cleaned;
+    setZipCode(formatted);
+
+    if (cleaned.length === 8) {
+      setFetchingCep(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleaned}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setStreet(data.logradouro || "");
+          setNeighborhood(data.bairro || "");
+          setCity(data.localidade || "");
+          setState(data.uf || "");
+        }
+      } catch { /* ignore */ } finally {
+        setFetchingCep(false);
+      }
+    }
+  };
 
   const updateGroup = useMutation({
     mutationFn: async () => {
@@ -227,6 +419,13 @@ function GroupTab() {
           splitting_rule: splittingRule as any,
           closing_day: parseInt(closingDay),
           due_day: parseInt(dueDay),
+          street: street.trim() || null,
+          street_number: streetNumber.trim() || null,
+          complement: complement.trim() || null,
+          neighborhood: neighborhood.trim() || null,
+          city: city.trim() || null,
+          state: state.trim() || null,
+          zip_code: zipCode.replace(/\D/g, "") || null,
         })
         .eq("id", membership!.group_id);
       if (error) throw error;
@@ -259,7 +458,7 @@ function GroupTab() {
   }
 
   return (
-    <ScrollReveal preset="blur-slide">
+    <ScrollRevealGroup preset="blur-slide" className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Dados da moradia</CardTitle>
@@ -271,7 +470,7 @@ function GroupTab() {
           </div>
           <div className="space-y-2">
             <Label>Descrição</Label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: República masculina próxima à USP" />
           </div>
           <div className="space-y-2">
             <Label>Regra de rateio</Label>
@@ -313,14 +512,62 @@ function GroupTab() {
             </div>
             <Switch checked={participatesInSplits} onCheckedChange={setParticipatesInSplits} />
           </div>
-
-          <Button onClick={() => updateGroup.mutate()} disabled={updateGroup.isPending} className="w-full">
-            {updateGroup.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            Salvar Alterações
-          </Button>
         </CardContent>
       </Card>
-    </ScrollReveal>
+
+      {/* Address Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <MapPin className="h-5 w-5" /> Endereço
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>CEP</Label>
+            <div className="relative">
+              <Input value={zipCode} onChange={(e) => handleCepChange(e.target.value)} placeholder="00000-000" maxLength={9} />
+              {fetchingCep && <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />}
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2 space-y-2">
+              <Label>Rua</Label>
+              <Input value={street} onChange={(e) => setStreet(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Número</Label>
+              <Input value={streetNumber} onChange={(e) => setStreetNumber(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Complemento</Label>
+              <Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Apto, Bloco..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Bairro</Label>
+              <Input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Cidade</Label>
+              <Input value={city} onChange={(e) => setCity(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Estado</Label>
+              <Input value={state} onChange={(e) => setState(e.target.value)} maxLength={2} placeholder="SP" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button onClick={() => updateGroup.mutate()} disabled={updateGroup.isPending} className="w-full">
+        {updateGroup.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+        Salvar Alterações
+      </Button>
+    </ScrollRevealGroup>
   );
 }
 
