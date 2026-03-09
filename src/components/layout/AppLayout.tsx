@@ -74,7 +74,8 @@ const adminGroup = {
 export function AppLayout() {
   const { membership, isAdmin } = useAuth();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(true);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
@@ -87,6 +88,20 @@ export function AppLayout() {
   }, []);
 
   const sidebarGroups = isAdmin ? [...mainNavGroups, adminGroup] : mainNavGroups;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+
+    const syncSidebarState = () => {
+      setIsMobileViewport(mediaQuery.matches);
+      setMenuOpen(!mediaQuery.matches);
+    };
+
+    syncSidebarState();
+
+    mediaQuery.addEventListener("change", syncSidebarState);
+    return () => mediaQuery.removeEventListener("change", syncSidebarState);
+  }, []);
 
   const Logo = () => (
     <Link to="/dashboard" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
@@ -102,7 +117,7 @@ export function AppLayout() {
       <div className="flex items-center h-14 shrink-0 px-4 md:hidden border-b border-sidebar-border">
          <span className="text-lg font-bold tracking-tight text-sidebar-foreground">Republi-K</span>
       </div>
-      <div className="flex-1 overflow-y-auto py-4 px-3">
+      <div className="flex-1 overflow-y-auto px-3 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <nav className="space-y-4">
           {sidebarGroups.map((group) => (
             <CollapsibleNavGroup 
@@ -110,7 +125,7 @@ export function AppLayout() {
               title={group.title} 
               items={group.items} 
               location={location} 
-              onItemClick={() => setMobileMenuOpen(false)}
+              onItemClick={() => isMobileViewport && setMenuOpen(false)}
             />
           ))}
 
@@ -119,7 +134,7 @@ export function AppLayout() {
               title="Convivência" 
               items={convenienceItems} 
               location={location} 
-              onItemClick={() => setMobileMenuOpen(false)}
+              onItemClick={() => isMobileViewport && setMenuOpen(false)}
             />
           </div>
         </nav>
@@ -145,10 +160,10 @@ export function AppLayout() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden shrink-0 h-12 w-12"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="h-12 w-12 shrink-0"
+            onClick={() => setMenuOpen(!menuOpen)}
           >
-            <MenuToggleIcon open={mobileMenuOpen} className="h-8 w-8 scale-125" />
+            <MenuToggleIcon open={menuOpen} className="h-8 w-8 scale-125" />
             <span className="sr-only">Menu</span>
           </Button>
 
@@ -202,18 +217,20 @@ export function AppLayout() {
       {/* Conteúdo Principal (Sidebar + Main) */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar Desktop */}
-        <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex md:flex-col overflow-y-auto shadow-xl">
-          <SidebarContent />
-        </aside>
+        {!isMobileViewport && menuOpen && (
+          <aside className="hidden w-64 shrink-0 overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl md:flex md:flex-col">
+            <SidebarContent />
+          </aside>
+        )}
 
         {/* Sidebar Mobile */}
-        {mobileMenuOpen && (
+        {isMobileViewport && menuOpen && (
           <>
-            <div 
-              className="absolute inset-0 z-30 md:hidden bg-black/50 backdrop-blur-sm" 
-              onClick={() => setMobileMenuOpen(false)}
+            <div
+              className="absolute inset-x-0 bottom-0 top-16 z-30 bg-black/50 backdrop-blur-sm"
+              onClick={() => setMenuOpen(false)}
             />
-            <div className="absolute top-0 left-0 bottom-0 z-40 w-64 md:hidden bg-sidebar text-sidebar-foreground shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-300 border-r border-sidebar-border">
+            <div className="absolute bottom-0 left-0 top-16 z-40 w-64 overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl animate-in slide-in-from-left duration-300">
               <SidebarContent />
             </div>
           </>
