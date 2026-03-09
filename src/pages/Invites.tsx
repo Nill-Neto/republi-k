@@ -257,9 +257,32 @@ export default function Invites() {
                             <RefreshCw className="h-4 w-4" />
                           )}
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteInvite.mutate(inv.id)}
+                          disabled={deleteInvite.isPending}
+                          title="Excluir convite"
+                          aria-label={`Excluir convite para ${inv.email}`}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </>
                     )}
-
+                    {inv.status !== "pending" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteInvite.mutate(inv.id)}
+                        disabled={deleteInvite.isPending}
+                        title="Excluir convite"
+                        aria-label={`Excluir convite para ${inv.email}`}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
