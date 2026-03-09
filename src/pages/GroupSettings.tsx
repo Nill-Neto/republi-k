@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Save, SlidersHorizontal } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
 
 export default function GroupSettings() {
-  const { membership, refreshMembership } = useAuth();
+  const { user, membership, refreshMembership } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: group, isLoading } = useQuery({
@@ -29,11 +30,28 @@ export default function GroupSettings() {
     enabled: !!membership?.group_id,
   });
 
+  const { data: myMembership } = useQuery({
+    queryKey: ["my-membership", membership?.group_id, user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("group_members")
+        .select("id, participates_in_splits")
+        .eq("group_id", membership!.group_id)
+        .eq("user_id", user!.id)
+        .eq("active", true)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!membership?.group_id && !!user?.id,
+  });
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [splittingRule, setSplittingRule] = useState<string>("equal");
   const [closingDay, setClosingDay] = useState<string>("1");
   const [dueDay, setDueDay] = useState<string>("10");
+  const [participatesInSplits, setParticipatesInSplits] = useState(true);
 
   useEffect(() => {
     if (group) {
@@ -44,6 +62,12 @@ export default function GroupSettings() {
       setDueDay(String(group.due_day || 10));
     }
   }, [group]);
+
+  useEffect(() => {
+    if (myMembership) {
+      setParticipatesInSplits(myMembership.participates_in_splits);
+    }
+  }, [myMembership]);
 
   const updateGroup = useMutation({
     mutationFn: async () => {
@@ -58,9 +82,19 @@ export default function GroupSettings() {
         })
         .eq("id", membership!.group_id);
       if (error) throw error;
+
+      // Update admin's participation in splits
+      if (myMembership) {
+        const { error: memberError } = await supabase
+          .from("group_members")
+          .update({ participates_in_splits: participatesInSplits })
+          .eq("id", myMembership.id);
+        if (memberError) throw memberError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group"] });
+      queryClient.invalidateQueries({ queryKey: ["my-membership"] });
       refreshMembership();
       toast({ title: "Salvo!", description: "Configurações atualizadas." });
     },
@@ -140,6 +174,19 @@ export default function GroupSettings() {
                 No dia {dueDay} já será considerado atraso.
               </p>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Participar dos rateios</Label>
+              <p className="text-xs text-muted-foreground">
+                Desative se você apenas administra o grupo e não participa das despesas.
+              </p>
+            </div>
+            <Switch
+              checked={participatesInSplits}
+              onCheckedChange={setParticipatesInSplits}
+            />
           </div>
 
           <Button onClick={() => updateGroup.mutate()} disabled={updateGroup.isPending} className="w-full">

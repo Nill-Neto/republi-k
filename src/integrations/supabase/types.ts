@@ -296,6 +296,7 @@ export type Database = {
           id: string
           joined_at: string
           left_at: string | null
+          participates_in_splits: boolean
           split_percentage: number | null
           user_id: string
         }
@@ -305,6 +306,7 @@ export type Database = {
           id?: string
           joined_at?: string
           left_at?: string | null
+          participates_in_splits?: boolean
           split_percentage?: number | null
           user_id: string
         }
@@ -314,6 +316,7 @@ export type Database = {
           id?: string
           joined_at?: string
           left_at?: string | null
+          participates_in_splits?: boolean
           split_percentage?: number | null
           user_id?: string
         }
