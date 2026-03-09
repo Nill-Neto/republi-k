@@ -74,7 +74,7 @@ export function PageHero({
         className={cn(
           "relative overflow-hidden rounded-xl border transition-all duration-300 z-30",
           isCompact
-            ? "sticky top-16 bg-transparent backdrop-blur-xl shadow-lg p-3 sm:p-3"
+            ? "sticky top-0 bg-transparent backdrop-blur-xl shadow-lg p-3 sm:p-3"
             : "bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-4 sm:p-5"
         )}
       >
