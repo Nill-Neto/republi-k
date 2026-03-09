@@ -1,4 +1,4 @@
-import { SidebarDemo } from "@/components/ui/sidebar-demo";
+import { SidebarDemo } from "@/components/ui/demo";
 
 const SidebarDemoPage = () => {
   return (

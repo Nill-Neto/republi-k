@@ -43,20 +43,13 @@ const ACTIVE_GROUP_KEY = "republi-k-active-group";
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 
-const withTimeout = async <T,>(promise: Promise<T>, ms: number, message: string): Promise<T> => {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  const timeoutPromise = new Promise<T>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error(message)), ms);
-  });
-
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
+const withTimeout = <T,>(promise: Promise<T>, ms: number, message: string): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error(message)), ms);
+    }),
+  ]);
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {

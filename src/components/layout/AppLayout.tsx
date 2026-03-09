@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Sidebar, SidebarBody } from "@/components/ui/animated-sidebar";
 
 const mainNavGroups = [
   {
@@ -215,28 +216,14 @@ export function AppLayout() {
       </motion.header>
 
       {/* Conteúdo Principal (Sidebar + Main) */}
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Sidebar Desktop */}
-        {!isMobileViewport && menuOpen && (
-          <aside className="hidden w-64 shrink-0 overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl md:flex md:flex-col">
+      <div className="relative flex flex-1 overflow-hidden">
+        <Sidebar open={mobileMenuOpen} setOpen={setMobileMenuOpen}>
+          <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
             <SidebarContent />
-          </aside>
-        )}
+          </SidebarBody>
+        </Sidebar>
 
-        {/* Sidebar Mobile */}
-        {isMobileViewport && menuOpen && (
-          <>
-            <div
-              className="absolute inset-x-0 bottom-0 top-16 z-30 bg-black/50 backdrop-blur-sm"
-              onClick={() => setMenuOpen(false)}
-            />
-            <div className="absolute bottom-0 left-0 top-16 z-40 w-64 overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl animate-in slide-in-from-left duration-300">
-              <SidebarContent />
-            </div>
-          </>
-        )}
-
-        <main ref={mainRef} className="flex-1 overflow-x-hidden overflow-y-auto p-4 pt-1 md:px-8 md:pt-2 bg-background relative">
+        <main ref={mainRef} className="relative flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 pt-1 md:px-8 md:pt-2">
           {/* Decorative background — clipped to prevent scroll overflow */}
           <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
             <div className="absolute inset-0 [background:radial-gradient(125%_125%_at_50%_0%,transparent_40%,hsl(var(--primary)/0.08)_100%)]" />
