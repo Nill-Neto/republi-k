@@ -30,7 +30,6 @@ import {
   MessageSquare,
   BookOpen,
   Vote,
-  Wallet,
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -73,12 +72,20 @@ const adminGroup = {
 };
 
 export function AppLayout() {
-  const { membership, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const location = useLocation();
+  
+  // Estado que define se a sidebar foi fixada aberta ou não pelo botão de hambúrguer
   const [menuOpen, setMenuOpen] = useState(true);
+  // Estado para capturar quando o mouse está sobre a sidebar
+  const [isHovered, setIsHovered] = useState(false);
+  
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+
+  // A sidebar ficará expandida se estiver fixada (menuOpen) OU se tiver hover no desktop
+  const isSidebarOpen = isMobileViewport ? menuOpen : (menuOpen || isHovered);
 
   useEffect(() => {
     const el = mainRef.current;
@@ -115,16 +122,7 @@ export function AppLayout() {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className={cn("flex items-center h-14 shrink-0 border-b border-sidebar-border transition-all", menuOpen ? "px-4" : "px-0 justify-center")}>
-        {menuOpen ? (
-          <span className="text-lg font-bold tracking-tight text-sidebar-foreground">Republi-K</span>
-        ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-serif font-bold">
-            R
-          </div>
-        )}
-      </div>
-      <div className={cn("flex-1 overflow-y-auto py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", menuOpen ? "px-3" : "px-2")}>
+      <div className={cn("flex-1 overflow-y-auto py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isSidebarOpen ? "px-3" : "px-2")}>
         <nav className="space-y-4">
           {sidebarGroups.map((group) => (
             <CollapsibleNavGroup
@@ -133,7 +131,7 @@ export function AppLayout() {
               items={group.items}
               location={location}
               onItemClick={() => isMobileViewport && setMenuOpen(false)}
-              menuOpen={menuOpen}
+              menuOpen={isSidebarOpen}
             />
           ))}
 
@@ -143,7 +141,7 @@ export function AppLayout() {
               items={convenienceItems}
               location={location}
               onItemClick={() => isMobileViewport && setMenuOpen(false)}
-              menuOpen={menuOpen}
+              menuOpen={isSidebarOpen}
             />
           </div>
         </nav>
@@ -225,11 +223,20 @@ export function AppLayout() {
 
       {/* Conteúdo Principal (Sidebar + Main) */}
       <div className="relative flex flex-1 overflow-hidden">
-        <Sidebar open={menuOpen} setOpen={setMenuOpen}>
-          <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
-            <SidebarContent />
-          </SidebarBody>
-        </Sidebar>
+        <div 
+          className="z-20 h-full flex shrink-0"
+          onMouseEnter={() => !isMobileViewport && setIsHovered(true)}
+          onMouseLeave={() => !isMobileViewport && setIsHovered(false)}
+        >
+          <Sidebar 
+            open={isSidebarOpen} 
+            setOpen={isMobileViewport ? setMenuOpen : () => {}}
+          >
+            <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
+              <SidebarContent />
+            </SidebarBody>
+          </Sidebar>
+        </div>
 
         <main ref={mainRef} className="relative flex-1 overflow-x-hidden overflow-y-auto bg-transparent p-4 pt-1 md:px-8 md:pt-2">
           {/* Decorative background — clipped to prevent scroll overflow */}
