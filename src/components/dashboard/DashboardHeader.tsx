@@ -64,10 +64,10 @@ export function DashboardHeader({
       <motion.section
         layout
         className={cn(
-          "relative overflow-hidden rounded-xl border transition-all duration-300 z-30",
+          "relative overflow-hidden rounded-xl border transition-all duration-300 z-30 dark text-foreground",
           isCompact
-            ? "sticky top-0 bg-transparent backdrop-blur-xl shadow-lg p-3 sm:p-3"
-            : "bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-4 sm:p-5"
+            ? "sticky top-0 bg-black/80 backdrop-blur-xl shadow-lg p-3 sm:p-3 border-border/50"
+            : "bg-black/60 backdrop-blur supports-[backdrop-filter]:bg-black/50 p-4 sm:p-5"
         )}
       >
         {/* Accent bar */}
@@ -119,7 +119,7 @@ export function DashboardHeader({
 
           {/* Right: Actions */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-            <div className="flex items-center bg-card/80 border rounded-lg p-1 shadow-sm h-10">
+            <div className="flex items-center bg-card border rounded-lg p-1 shadow-sm h-10">
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onPrevMonth}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -155,11 +155,11 @@ export function DashboardHeader({
         {/* Badges — hidden when compact */}
         {!isCompact && (
           <AnimatedGroup preset="blur-slide" className="flex flex-wrap gap-2 mt-4">
-            <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm">
+            <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm bg-card">
               <CalendarClock className="h-3.5 w-3.5 text-primary" />
               Competência: <strong>{format(cycleStart, "dd/MM")}</strong> a <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong>
             </Badge>
-            <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm">
+            <Badge variant="outline" className="gap-1.5 font-normal py-1 px-3 text-sm bg-card">
               <Calendar className="h-3.5 w-3.5 text-destructive" />
               Pagar até: <strong>{format(cycleLimitDate, "dd/MM")}</strong>
             </Badge>

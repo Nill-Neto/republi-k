@@ -135,10 +135,10 @@ export function AppLayout() {
       {/* Header Superior Fixo — scroll-aware */}
       <motion.header
         className={cn(
-          "z-50 flex h-16 shrink-0 items-center justify-between px-4 md:px-6 transition-all duration-300 border-b",
+          "z-50 flex h-16 shrink-0 items-center justify-between px-4 md:px-6 transition-all duration-300 border-b dark text-foreground",
           isScrolled
-            ? "bg-card/80 backdrop-blur-xl shadow-sm"
-            : "bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60"
+            ? "bg-black/80 backdrop-blur-xl shadow-sm border-border/50"
+            : "bg-black/60 backdrop-blur supports-[backdrop-filter]:bg-black/50 border-transparent"
         )}
         initial={{ opacity: 0, y: -12, filter: "blur(8px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -169,7 +169,7 @@ export function AppLayout() {
                     className={cn(
                       "flex items-center rounded-full transition-colors duration-200 h-9 px-3 relative",
                       isActive
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-primary/20 text-primary"
                         : "bg-transparent text-muted-foreground hover:bg-muted"
                     )}
                     whileHover={{ scale: 1.05 }}

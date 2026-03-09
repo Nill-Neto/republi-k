@@ -72,10 +72,10 @@ export function PageHero({
       <motion.section
         layout
         className={cn(
-          "relative overflow-hidden rounded-xl border transition-all duration-300 z-30",
+          "relative overflow-hidden rounded-xl border transition-all duration-300 z-30 dark text-foreground",
           isCompact
-            ? "sticky top-0 bg-transparent backdrop-blur-xl shadow-lg p-3 sm:p-3"
-            : "bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-4 sm:p-5"
+            ? "sticky top-0 bg-black/80 backdrop-blur-xl shadow-lg p-3 sm:p-3 border-border/50"
+            : "bg-black/60 backdrop-blur supports-[backdrop-filter]:bg-black/50 p-4 sm:p-5"
         )}
       >
         <motion.div
