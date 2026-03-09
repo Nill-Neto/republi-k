@@ -43,19 +43,76 @@ export default function Invites() {
     enabled: !!membership?.group_id,
   });
 
+  const { data: group } = useQuery({
+    queryKey: ["group", membership?.group_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("groups")
+        .select("name")
+        .eq("id", membership!.group_id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!membership?.group_id,
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   const sendInvite = useMutation({
     mutationFn: async (inviteEmail: string) => {
-      const { error } = await supabase.from("invites").insert({
+      const { data, error } = await supabase.from("invites").insert({
         group_id: membership!.group_id,
         invited_by: user!.id,
         email: inviteEmail.toLowerCase().trim(),
-      });
+      }).select().single();
       if (error) throw error;
+
+      // Send email via edge function
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      
+      if (token && data) {
+        const response = await fetch(
+          `https://mqorykrxvqfkifjkveqe.supabase.co/functions/v1/send-invite-email`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              email: data.email,
+              token: data.token,
+              groupName: group?.name,
+              inviterName: profile?.full_name,
+            }),
+          }
+        );
+        
+        if (!response.ok) {
+          console.error("Failed to send invite email:", await response.text());
+        }
+      }
+      
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invites"] });
       setEmail("");
-      toast({ title: "Convite enviado!", description: "O link foi gerado com sucesso." });
+      toast({ title: "Convite enviado!", description: "O email foi enviado para o morador." });
     },
     onError: (err: any) => {
       const msg = err.message?.includes("unique")
