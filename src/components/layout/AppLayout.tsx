@@ -99,36 +99,41 @@ export function AppLayout() {
     </Link>
   );
 
-  const SidebarContent = () => (
-    <div className="flex h-full flex-col">
-      <div className={cn("flex-1 overflow-y-auto py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", menuOpen ? "px-3" : "px-2")}>
-        <nav className="space-y-1">
-          {sidebarItems.map((item) => (
-            <SidebarNavLink
-              key={item.to}
-              item={item}
-              location={location}
-              onClick={() => setMenuOpen(false)} // Sempre fecha ao clicar num item
-              menuOpen={menuOpen}
-            />
-          ))}
-
-          {/* Links de convivência aparecem na sidebar apenas em telas menores (mobile) */}
-          <div className="md:hidden pt-4 mt-4 border-t border-sidebar-border space-y-1">
-            {convenienceItems.map((item) => (
+  const SidebarContent = () => {
+    // No mobile, os itens sempre renderizam em seu estado expandido (para que o texto não suma durante o slide)
+    const isExpanded = isMobileViewport || menuOpen;
+    
+    return (
+      <div className="flex h-full flex-col">
+        <div className={cn("flex-1 overflow-y-auto py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isExpanded ? "px-3" : "px-2")}>
+          <nav className="space-y-1">
+            {sidebarItems.map((item) => (
               <SidebarNavLink
                 key={item.to}
                 item={item}
                 location={location}
                 onClick={() => setMenuOpen(false)} // Sempre fecha ao clicar num item
-                menuOpen={menuOpen}
+                menuOpen={isExpanded}
               />
             ))}
-          </div>
-        </nav>
+
+            {/* Links de convivência aparecem na sidebar apenas em telas menores (mobile) */}
+            <div className="md:hidden pt-4 mt-4 border-t border-sidebar-border space-y-1">
+              {convenienceItems.map((item) => (
+                <SidebarNavLink
+                  key={item.to}
+                  item={item}
+                  location={location}
+                  onClick={() => setMenuOpen(false)} // Sempre fecha ao clicar num item
+                  menuOpen={isExpanded}
+                />
+              ))}
+            </div>
+          </nav>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-transparent">
@@ -204,13 +209,30 @@ export function AppLayout() {
 
       {/* Conteúdo Principal (Sidebar + Main) */}
       <div className="relative flex flex-1 overflow-hidden">
+        
+        {/* Backdrop (Fundo translúcido) exclusivo para mobile */}
+        {isMobileViewport && (
+          <div 
+            className={cn(
+              "absolute inset-0 z-30 bg-background/80 backdrop-blur-sm transition-opacity duration-300",
+              menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            )}
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
+
+        {/* Sidebar Wrapper */}
         <div 
-          className="z-20 h-full flex shrink-0"
+          className={cn(
+            "z-40 h-full flex shrink-0 transition-transform duration-300",
+            isMobileViewport ? "absolute left-0 top-0 bottom-0" : "relative",
+            isMobileViewport && !menuOpen ? "-translate-x-full" : "translate-x-0"
+          )}
           onMouseEnter={() => !isMobileViewport && setMenuOpen(true)}
           onMouseLeave={() => !isMobileViewport && setMenuOpen(false)}
         >
           <Sidebar 
-            open={menuOpen} 
+            open={isMobileViewport ? true : menuOpen} 
             setOpen={setMenuOpen}
           >
             <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl !max-w-[230px]">
@@ -219,6 +241,7 @@ export function AppLayout() {
           </Sidebar>
         </div>
 
+        {/* Área Central / Conteúdo das rotas */}
         <main ref={mainRef} className="relative flex-1 overflow-x-hidden overflow-y-auto bg-transparent p-4 pt-1 md:px-8 md:pt-2">
           {/* Decorative background — clipped to prevent scroll overflow */}
           <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
@@ -284,6 +307,7 @@ function SidebarNavLink({
     </Link>
   );
 
+  // Apenas englobamos com Tooltip se estiver no Desktop e colapsado
   if (!menuOpen) {
     return (
       <Tooltip delayDuration={0}>
