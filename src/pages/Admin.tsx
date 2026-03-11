@@ -9,6 +9,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 
 export default function Admin() {
   const { user, membership, isAdmin, profile } = useAuth();
+  const [heroCompact, setHeroCompact] = useState(false);
   
   const { data: groupSettings } = useQuery({
     queryKey: ["group-settings", membership?.group_id],
@@ -194,15 +195,18 @@ export default function Admin() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-8 pt-24 space-y-8 animate-fade-in relative z-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Administração</h1>
-          <p className="text-muted-foreground mt-1 text-sm md:text-base">
-            Gerenciamento e visão geral da república
-          </p>
-        </div>
-      </div>
+    <div className="space-y-4 animate-in fade-in duration-500">
+      <DashboardHeader
+        userName={profile?.full_name}
+        groupName={membership?.group_name}
+        currentDate={currentDate}
+        cycleStart={cycleStart}
+        cycleEnd={cycleEnd}
+        cycleLimitDate={cycleLimitDate}
+        onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
+        onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
+        onCompactChange={setHeroCompact}
+      />
 
       {isLoading ? (
         <div className="py-12 text-center text-muted-foreground">Carregando dados administrativos...</div>
