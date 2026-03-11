@@ -10,7 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { parseLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { PageHero } from "@/components/layout/PageHero";
 import { RepublicTab } from "@/components/dashboard/RepublicTab";
 import { PersonalTab } from "@/components/dashboard/PersonalTab";
 import { CardsTab } from "@/components/dashboard/CardsTab";
@@ -469,17 +469,27 @@ export default function Dashboard() {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 animate-in fade-in duration-500">
-      <DashboardHeader
-        userName={profile?.full_name}
-        groupName={membership?.group_name}
-        currentDate={currentDate}
-        cycleStart={cycleStart}
-        cycleEnd={cycleEnd}
-        cycleLimitDate={cycleLimitDate}
-        onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
-        onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
+      <PageHero
+        title={isPersonalFinancePage ? "Minhas Finanças" : "Painel Geral"}
+        subtitle={isPersonalFinancePage ? "Seu resumo financeiro e rateios." : "Visão geral da moradia."}
+        icon={isPersonalFinancePage ? <Wallet className="h-4 w-4" /> : <LayoutDashboard className="h-4 w-4" />}
         compactTabs={compactTabsList}
         onCompactChange={setHeroCompact}
+        actions={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
+                {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        }
       />
 
       <div className="space-y-4">
