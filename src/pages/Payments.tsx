@@ -531,10 +531,11 @@ function PaymentItem({ payment, isAdmin, onConfirm, onManage }: { payment: any; 
           </p>
           {payment.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{payment.notes}</p>}
           {payment.receipt_url && (
-            <a href={payment.receipt_url} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1.5">
-              <ImageIcon className="h-3 w-3" /> Ver comprovante
-            </a>
+            <Button variant="outline" size="sm" className="h-7 text-xs mt-2 w-fit gap-1.5" asChild>
+              <a href={payment.receipt_url} target="_blank" rel="noopener noreferrer">
+                <ImageIcon className="h-3 w-3" /> Ver comprovante
+              </a>
+            </Button>
           )}
         </div>
         <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
