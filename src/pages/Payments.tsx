@@ -45,31 +45,77 @@ export default function Payments() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // --- Date Cycle Logic ---
+  const { data: groupSettings } = useQuery({
+    queryKey: ["group-settings-payments", membership?.group_id],
+    queryFn: async () => {
+      const { data } = await supabase.from("groups").select("closing_day").eq("id", membership!.group_id).single();
+      return data;
+    },
+    enabled: !!membership?.group_id
+  });
+
+  const closingDay = groupSettings?.closing_day || 1;
+
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    if (groupSettings) {
+      const today = new Date();
+      if (today.getDate() >= closingDay) {
+        setCurrentDate(addMonths(today, 1));
+      } else {
+        setCurrentDate(today);
+      }
+    }
+  }, [groupSettings, closingDay]);
+
+  const cycleStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, closingDay);
+  const cycleEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), closingDay);
+  cycleStart.setHours(0, 0, 0, 0);
+  cycleEnd.setHours(0, 0, 0, 0);
+
   // Manage Payment State
   const [editingPayment, setEditingPayment] = useState<any>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
-  const [editDate, setEditDate] = useState("");
+  const [editCompetence, setEditCompetence] = useState("");
 
   const openManage = (payment: any) => {
     setEditingPayment(payment);
     setEditAmount(String(payment.amount));
     setEditNotes(payment.notes || "");
     setEditStatus(payment.status);
-    setEditDate(payment.created_at ? format(new Date(payment.created_at), "yyyy-MM-dd") : "");
+
+    // Calcula a competência baseada na data de criação do pagamento e dia de fechamento
+    const d = new Date(payment.created_at);
+    let compY = d.getFullYear();
+    let compM = d.getMonth() + 1;
+    if (d.getDate() >= closingDay) {
+      compM += 1;
+      if (compM > 12) {
+        compM = 1;
+        compY += 1;
+      }
+    }
+    setEditCompetence(`${compY}-${String(compM).padStart(2, "0")}`);
   };
 
   const updatePayment = useMutation({
-    mutationFn: async (values: { amount: string; notes: string; status: string; date: string }) => {
+    mutationFn: async (values: { amount: string; notes: string; status: string; competence: string }) => {
       let newDate = editingPayment.created_at;
       
-      if (values.date) {
-        // Mantém a hora original, mas altera o ano/mês/dia para mover a competência
-        const oldDate = new Date(editingPayment.created_at);
-        const [year, month, day] = values.date.split("-").map(Number);
-        oldDate.setFullYear(year, month - 1, day);
-        newDate = oldDate.toISOString();
+      if (values.competence) {
+        const [yStr, mStr] = values.competence.split("-");
+        const y = parseInt(yStr);
+        const m = parseInt(mStr) - 1; // 0-based month
+        
+        // Define uma data segura que caia exatamente dentro do ciclo da competência escolhida.
+        // O ciclo da competência 'm' começa no 'closingDay' do mês 'm-1'.
+        // Usamos meio-dia para evitar problemas de fuso horário.
+        const safeDate = new Date(y, m - 1, closingDay, 12, 0, 0);
+        newDate = safeDate.toISOString();
       }
 
       const { error } = await supabase
@@ -107,35 +153,6 @@ export default function Payments() {
     },
     onError: (err: any) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
   });
-
-  // --- Date Cycle Logic ---
-  const { data: groupSettings } = useQuery({
-    queryKey: ["group-settings-payments", membership?.group_id],
-    queryFn: async () => {
-      const { data } = await supabase.from("groups").select("closing_day").eq("id", membership!.group_id).single();
-      return data;
-    },
-    enabled: !!membership?.group_id
-  });
-
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
-
-  useEffect(() => {
-    if (groupSettings) {
-      const today = new Date();
-      if (today.getDate() >= (groupSettings.closing_day || 1)) {
-        setCurrentDate(addMonths(today, 1));
-      } else {
-        setCurrentDate(today);
-      }
-    }
-  }, [groupSettings]);
-
-  const closingDay = groupSettings?.closing_day || 1;
-  const cycleStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, closingDay);
-  const cycleEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), closingDay);
-  cycleStart.setHours(0, 0, 0, 0);
-  cycleEnd.setHours(0, 0, 0, 0);
 
   // Fetch payments FILTERED by cycle
   const { data: payments, isLoading } = useQuery({
@@ -424,12 +441,12 @@ export default function Payments() {
                 <Input type="number" min="0.01" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Data (Competência)</Label>
-                <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                <Label>Competência</Label>
+                <Input type="month" value={editCompetence} onChange={(e) => setEditCompetence(e.target.value)} />
               </div>
             </div>
             <p className="text-[10px] text-muted-foreground -mt-2">
-              A data define em qual ciclo o pagamento é contabilizado no sistema.
+              Selecione o mês para que o sistema direcione este pagamento para a competência correta.
             </p>
 
             <div className="space-y-2">
@@ -472,7 +489,7 @@ export default function Payments() {
               
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setEditingPayment(null)}>Cancelar</Button>
-                <Button onClick={() => updatePayment.mutate({ amount: editAmount, notes: editNotes, status: editStatus, date: editDate })} disabled={updatePayment.isPending}>
+                <Button onClick={() => updatePayment.mutate({ amount: editAmount, notes: editNotes, status: editStatus, competence: editCompetence })} disabled={updatePayment.isPending}>
                   {updatePayment.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Salvar
                 </Button>
