@@ -240,8 +240,8 @@ export function AppLayout() {
             <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
             <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-accent/10 blur-3xl" />
           </div>
-          {/* Adicionada a altura mínima aqui (min-h-[calc(100vh+8rem)]) e pb-12 para garantir espaço de rolagem */}
-          <div className="max-w-7xl mx-auto w-full min-h-[calc(100vh+8rem)] pb-12">
+          {/* Substituído o min-h excessivo por um padding-bottom na medida certa para a retração do hero */}
+          <div className="max-w-7xl mx-auto w-full pb-24">
             <Outlet />
           </div>
         </main>
