@@ -27,6 +27,7 @@ import {
   BookOpen,
   Vote,
   Wallet,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -42,6 +43,7 @@ const sidebarCoreItems = [
 ];
 
 const adminItems = [
+  { to: "/admin", icon: Shield, label: "Administração" },
   { to: "/recurring", icon: RefreshCw, label: "Recorrências" },
   { to: "/invites", icon: UserPlus, label: "Convites" },
   { to: "/audit-log", icon: ScrollText, label: "Histórico" },
