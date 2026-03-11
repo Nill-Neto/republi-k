@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Users, CreditCard, Shield } from "lucide-react";
+import { User, Users, CreditCard } from "lucide-react";
 import { format, subDays, isAfter, isSameDay, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
@@ -13,7 +13,6 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { RepublicTab } from "@/components/dashboard/RepublicTab";
 import { PersonalTab } from "@/components/dashboard/PersonalTab";
 import { CardsTab } from "@/components/dashboard/CardsTab";
-import { AdminTab } from "@/components/dashboard/AdminTab";
 import { PaymentDialogs, type RateioScope } from "@/components/dashboard/PaymentDialogs";
 import { getCategoryLabel } from "@/constants/categories";
 import { useLocation } from "react-router-dom";
@@ -117,8 +116,6 @@ export default function Dashboard() {
     enabled: !!membership?.group_id && !!user?.id,
   });
 
-
-
   const { data: mySubmittedPayments = [] } = useQuery({
     queryKey: ["my-submitted-payments-dashboard", membership?.group_id, user?.id],
     queryFn: async () => {
@@ -208,101 +205,7 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
-  const { data: adminData } = useQuery({
-    queryKey: ["admin-dashboard-data", membership?.group_id],
-    queryFn: async () => {
-      if (!isAdmin || !membership?.group_id) return null;
-
-      const [membersRes, balancesRes, pendingPaymentsRes, collectiveSubmittedPaymentsRes, rolesRes, pendingCollectiveSplitsRes, departuresRes] = await Promise.all([
-        supabase.from("group_members").select("user_id, active").eq("group_id", membership.group_id).eq("active", true),
-        supabase.rpc("get_member_balances", { _group_id: membership.group_id }),
-        supabase.from("payments")
-          .select("id, expense_split_id, expense_splits(expenses(expense_type))")
-          .eq("group_id", membership.group_id)
-          .eq("status", "pending"),
-        supabase.from("payments")
-          .select("id, paid_by, amount, expense_split_id, status, expense_splits(expenses(expense_type))")
-          .eq("group_id", membership.group_id)
-          .in("status", ["pending", "confirmed"]),
-        supabase.from("user_roles").select("user_id, role").eq("group_id", membership.group_id),
-        supabase
-          .from("expense_splits")
-          .select("user_id, amount, status, expenses!inner(group_id, expense_type)")
-          .eq("status", "pending")
-          .eq("expenses.group_id", membership.group_id)
-          .eq("expenses.expense_type", "collective"),
-        supabase
-          .from("audit_log")
-          .select("created_at, details")
-          .eq("group_id", membership.group_id)
-          .eq("action", "remove_member")
-          .gte("created_at", cycleStart.toISOString())
-          .lt("created_at", cycleEnd.toISOString())
-      ]);
-
-      const userIds = membersRes.data?.map(m => m.user_id) ?? [];
-      const { data: profiles } = await supabase.from("group_member_profiles").select("id, full_name, avatar_url").eq("group_id", membership.group_id).in("id", userIds);
-
-      const members = membersRes.data?.map(m => ({
-        ...m,
-        profile: profiles?.find(p => p.id === m.user_id),
-        role: rolesRes.data?.find(r => r.user_id === m.user_id)?.role ?? 'morador'
-      })) ?? [];
-
-      const pendingCollectiveCount = (pendingPaymentsRes.data || []).filter((p: any) => {
-        if (!p.expense_split_id) return true;
-        const type = p.expense_splits?.expenses?.expense_type;
-        return type === 'collective';
-      }).length;
-
-      const submittedCollectiveByUser = (collectiveSubmittedPaymentsRes.data || []).reduce((acc: Record<string, number>, payment: any) => {
-        const isCollectivePayment = !payment.expense_split_id || payment.expense_splits?.expenses?.expense_type === 'collective';
-        if (!isCollectivePayment) return acc;
-
-        const payerId = payment.paid_by;
-        if (!payerId) return acc;
-
-        acc[payerId] = (acc[payerId] || 0) + Number(payment.amount || 0);
-        return acc;
-      }, {});
-
-      const adjustedBalances = (balancesRes.data ?? []).map((balance: any) => {
-        const submittedAmount = Number(submittedCollectiveByUser[balance.user_id] || 0);
-        const currentBalance = Number(balance.balance || 0);
-
-        if (submittedAmount <= 0 || currentBalance >= 0) return balance;
-
-        const adjustment = Math.min(Math.abs(currentBalance), submittedAmount);
-        return {
-          ...balance,
-          balance: currentBalance + adjustment,
-        };
-      });
-
-      const activeUserIds = new Set(members.map((m) => m.user_id));
-      const exMembersDebt = (pendingCollectiveSplitsRes.data || [])
-        .filter((s: any) => !activeUserIds.has(s.user_id))
-        .reduce((sum: number, s: any) => sum + Number(s.amount || 0), 0);
-
-      const departuresCount = (departuresRes.data || []).length;
-      const redistributedCount = (departuresRes.data || []).reduce((sum: number, log: any) => {
-        const value = Number(log?.details?.redistributed_pending_splits || 0);
-        return sum + (Number.isFinite(value) ? value : 0);
-      }, 0);
-
-      return {
-        members,
-        balances: adjustedBalances,
-        pendingPaymentsCount: pendingCollectiveCount,
-        exMembersDebt,
-        departuresCount,
-        redistributedCount,
-      };
-    },
-    enabled: !!membership?.group_id && isAdmin
-  });
-
-  // --- Data Processing ---
+  // --- Data Processing moved UP ---
 
   const collectiveExpenses = expensesInCycle.filter(e => e.expense_type === "collective");
   const totalMonthExpenses = collectiveExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -434,15 +337,12 @@ export default function Dashboard() {
   }, [collectivePendingPrevious]);
 
   // 2. Individual Pending (Manual + Installments)
-  // A. Manual pending splits (Cash/Pix/Debit that are pending) - EXCLUDE credit card splits here as they are parcelled
   const manualIndividualPending = pendingSplits.filter((s: any) => 
     s.expenses?.expense_type === "individual" && 
     s.expenses?.payment_method !== "credit_card" &&
     !paidSplitIds.has(s.id)
   );
 
-  // B. Installments for the CURRENT MONTH (Credit Card)
-  // These represent what I need to pay "now" (in this month's bill) for my individual credit card expenses
   const installmentIndividualPending = billInstallments.filter((i: any) => 
     i.expenses?.expense_type === "individual"
   ).map((i: any) => ({
@@ -451,11 +351,9 @@ export default function Dashboard() {
     expenses: i.expenses // { title, category, purchase_date }
   }));
 
-  // Combine them for the list
   const individualPending = [...manualIndividualPending, ...installmentIndividualPending];
   const totalIndividualPending = individualPending.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
 
-  // Total User Expenses (Comprometido) = Share + Individual Pending (Cash/Installments)
   const totalUserExpenses = myCollectiveShare + totalIndividualPending;
 
   const cardsBreakdown = useMemo(() => {
@@ -481,7 +379,6 @@ export default function Dashboard() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
   }, [billInstallments]);
-
 
   const handlePayRateio = async (scope: RateioScope) => {
     if (!receiptFile) return;
@@ -553,11 +450,6 @@ export default function Dashboard() {
 
   const compactTabsList = (
     <TabsList className={tabListClass}>
-      {!isPersonalFinancePage && isAdmin && (
-        <TabsTrigger value="admin" className={tabTriggerClass}>
-          <Shield className="h-3.5 w-3.5 mr-1.5" /> Admin
-        </TabsTrigger>
-      )}
       {!isPersonalFinancePage && (
         <TabsTrigger value="republic" className={tabTriggerClass}>
           <Users className="h-3.5 w-3.5 mr-1.5" /> República
@@ -594,11 +486,6 @@ export default function Dashboard() {
       <div className="space-y-4">
         {!heroCompact && (
         <TabsList className={tabListClass}>
-          {!isPersonalFinancePage && isAdmin && (
-            <TabsTrigger value="admin" className={tabTriggerClass}>
-              <Shield className="h-3.5 w-3.5 mr-1.5" /> Admin
-            </TabsTrigger>
-          )}
           {!isPersonalFinancePage && (
             <TabsTrigger value="republic" className={tabTriggerClass}>
               <Users className="h-3.5 w-3.5 mr-1.5" /> República
@@ -615,28 +502,6 @@ export default function Dashboard() {
             </>
           )}
         </TabsList>
-        )}
-
-        {!isPersonalFinancePage && isAdmin && (
-          <TabsContent value="admin" className="space-y-6">
-            {adminData ? (
-           <AdminTab 
-                memberBalances={adminData.balances} 
-                members={adminData.members} 
-                pendingPaymentsCount={adminData.pendingPaymentsCount}
-                collectiveExpenses={collectiveExpenses}
-                totalMonthExpenses={totalMonthExpenses}
-                cycleStart={cycleStart}
-                cycleEnd={cycleEnd}
-                currentDate={currentDate}
-                exMembersDebt={adminData.exMembersDebt}
-                departuresCount={adminData.departuresCount}
-                redistributedCount={adminData.redistributedCount}
-              />
-            ) : (
-              <div className="py-12 text-center text-muted-foreground">Carregando dados administrativos...</div>
-            )}
-          </TabsContent>
         )}
 
         <TabsContent value="republic" className="space-y-6">

@@ -1,0 +1,1 @@
+SELECT policyname, tablename, cmd, roles, qual, with_check FROM pg_policies WHERE schemaname = 'storage';

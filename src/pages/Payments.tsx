@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,11 +8,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Plus, Check, X, Upload, Image, ChevronLeft, ChevronRight, ChevronsUpDown, CreditCard } from "lucide-react";
+import { Loader2, Plus, Check, X, Upload, Image as ImageIcon, ChevronLeft, ChevronRight, ChevronsUpDown, CreditCard, Settings, Trash2 } from "lucide-react";
 import { format, addMonths, subMonths, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -27,7 +38,6 @@ export default function Payments() {
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [heroCompact, setHeroCompact] = useState(false);
   
-  // Alterado para array de IDs
   const [selectedSplitIds, setSelectedSplitIds] = useState<string[]>([]);
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
@@ -44,24 +54,104 @@ export default function Payments() {
     enabled: !!membership?.group_id
   });
 
+  const closingDay = groupSettings?.closing_day || 1;
+
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
 
   useEffect(() => {
     if (groupSettings) {
       const today = new Date();
-      if (today.getDate() >= (groupSettings.closing_day || 1)) {
+      if (today.getDate() >= closingDay) {
         setCurrentDate(addMonths(today, 1));
       } else {
         setCurrentDate(today);
       }
     }
-  }, [groupSettings]);
+  }, [groupSettings, closingDay]);
 
-  const closingDay = groupSettings?.closing_day || 1;
   const cycleStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, closingDay);
   const cycleEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), closingDay);
   cycleStart.setHours(0, 0, 0, 0);
   cycleEnd.setHours(0, 0, 0, 0);
+
+  // Manage Payment State
+  const [editingPayment, setEditingPayment] = useState<any>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [editCompetence, setEditCompetence] = useState("");
+
+  const openManage = (payment: any) => {
+    setEditingPayment(payment);
+    setEditAmount(String(payment.amount));
+    setEditNotes(payment.notes || "");
+    setEditStatus(payment.status);
+
+    // Calcula a competência baseada na data de criação do pagamento e dia de fechamento
+    const d = new Date(payment.created_at);
+    let compY = d.getFullYear();
+    let compM = d.getMonth() + 1;
+    if (d.getDate() >= closingDay) {
+      compM += 1;
+      if (compM > 12) {
+        compM = 1;
+        compY += 1;
+      }
+    }
+    setEditCompetence(`${compY}-${String(compM).padStart(2, "0")}`);
+  };
+
+  const updatePayment = useMutation({
+    mutationFn: async (values: { amount: string; notes: string; status: string; competence: string }) => {
+      let newDate = editingPayment.created_at;
+      
+      if (values.competence) {
+        const [yStr, mStr] = values.competence.split("-");
+        const y = parseInt(yStr);
+        const m = parseInt(mStr) - 1; // 0-based month
+        
+        // Define uma data segura que caia exatamente dentro do ciclo da competência escolhida.
+        // O ciclo da competência 'm' começa no 'closingDay' do mês 'm-1'.
+        // Usamos meio-dia para evitar problemas de fuso horário.
+        const safeDate = new Date(y, m - 1, closingDay, 12, 0, 0);
+        newDate = safeDate.toISOString();
+      }
+
+      const { error } = await supabase
+        .from("payments")
+        .update({
+          amount: Number(values.amount),
+          notes: values.notes || null,
+          status: values.status,
+          created_at: newDate,
+        })
+        .eq("id", editingPayment.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["my-pending-splits"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-dashboard-data"] });
+      toast({ title: "Pagamento atualizado!" });
+      setEditingPayment(null);
+    },
+    onError: (err: any) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+  });
+
+  const deletePayment = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("payments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["my-pending-splits"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-dashboard-data"] });
+      toast({ title: "Pagamento excluído." });
+      setEditingPayment(null);
+    },
+    onError: (err: any) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+  });
 
   // Fetch payments FILTERED by cycle
   const { data: payments, isLoading } = useQuery({
@@ -112,8 +202,6 @@ export default function Payments() {
       .filter((s) => selectedSplitIds.includes(s.id))
       .reduce((sum, s) => sum + Number(s.amount), 0);
     
-    // Only update if greater than 0 to avoid clearing manual edits unnecessarily 
-    // (though manual edits are discouraged in multi-select mode)
     if (selectedSplitIds.length > 0) {
       setAmount(total.toFixed(2));
     } else {
@@ -149,7 +237,6 @@ export default function Payments() {
       // 2. Insert payment records (one per split)
       const paymentsToInsert = selectedSplitIds.map((splitId) => {
         const split = pendingSplits?.find(s => s.id === splitId);
-        // We use the exact split amount for the record to ensure accounting consistency
         const splitAmount = split ? Number(split.amount) : 0;
         
         return {
@@ -169,7 +256,6 @@ export default function Payments() {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       queryClient.invalidateQueries({ queryKey: ["my-pending-splits"] });
       
-      // Reset form
       setOpen(false);
       setSelectedSplitIds([]);
       setAmount("");
@@ -206,23 +292,9 @@ export default function Payments() {
     );
   }
 
-  const defaultTab = isAdmin ? "pending" : "all";
-
-  const tabTriggerClass = "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm text-foreground/60 text-xs font-semibold px-3 py-1.5 rounded-md transition-all";
-  const tabListClass = "w-full justify-start overflow-x-auto bg-muted/50 rounded-lg p-1 h-auto gap-1";
-
-  const compactTabsList = (
-    <TabsList className={tabListClass}>
-      {isAdmin && <TabsTrigger value="pending" className={tabTriggerClass}>Pendentes</TabsTrigger>}
-      <TabsTrigger value="all" className={tabTriggerClass}>Todos</TabsTrigger>
-    </TabsList>
-  );
-
   return (
-    <Tabs defaultValue={defaultTab}>
     <div className="space-y-4">
       <PageHero
-        compactTabs={compactTabsList}
         onCompactChange={setHeroCompact}
         title="Pagamentos"
         subtitle="Histórico de pagamentos."
@@ -314,38 +386,134 @@ export default function Payments() {
         Exibindo competência: <strong>{format(cycleStart, "dd/MM")}</strong> até <strong>{format(subDays(cycleEnd, 1), "dd/MM")}</strong>
       </div>
 
-      {!heroCompact && (
-        <TabsList className={tabListClass}>
-          {isAdmin && <TabsTrigger value="pending" className={tabTriggerClass}>Pendentes</TabsTrigger>}
-          <TabsTrigger value="all" className={tabTriggerClass}>Todos</TabsTrigger>
-        </TabsList>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Card de Pendentes */}
+        <Card className="border-l-4 border-l-warning bg-card shadow-sm flex flex-col">
+          <CardContent className="p-0 flex-1 flex flex-col">
+            <div className="p-4 border-b bg-muted/20">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-warning"></div>
+                Pendentes
+                <Badge variant="secondary" className="ml-auto">
+                  {payments?.filter((p) => p.status === "pending").length || 0}
+                </Badge>
+              </h3>
+              <p className="text-sm text-muted-foreground">Aguardando confirmação</p>
+            </div>
+            <div className="p-4 space-y-3 flex-1 overflow-auto">
+              {payments?.filter((p) => p.status === "pending").length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground text-sm">Nenhum pagamento pendente.</div>
+              ) : (
+                payments?.filter((p) => p.status === "pending").map((p: any) => (
+                  <PaymentItem key={p.id} payment={p} isAdmin={isAdmin} onConfirm={handleConfirm} onManage={openManage} />
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-      {isAdmin && (
-        <TabsContent value="pending" className="space-y-3 mt-4">
-          {payments?.filter((p) => p.status === "pending").length === 0 && (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum pagamento pendente nesta competência.</CardContent></Card>
-          )}
-          {payments?.filter((p) => p.status === "pending").map((p: any) => (
-            <PaymentCard key={p.id} payment={p} isAdmin onConfirm={handleConfirm} />
-          ))}
-        </TabsContent>
-      )}
+        {/* Card de Histórico (Todos/Confirmados/Recusados) */}
+        <Card className="border-l-4 border-l-success bg-card shadow-sm flex flex-col">
+          <CardContent className="p-0 flex-1 flex flex-col">
+            <div className="p-4 border-b bg-muted/20">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-success"></div>
+                Histórico
+                <Badge variant="secondary" className="ml-auto">
+                  {payments?.filter((p) => p.status !== "pending").length || 0}
+                </Badge>
+              </h3>
+              <p className="text-sm text-muted-foreground">Confirmados e recusados</p>
+            </div>
+            <div className="p-4 space-y-3 flex-1 overflow-auto">
+              {payments?.filter((p) => p.status !== "pending").length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground text-sm">Nenhum pagamento no histórico.</div>
+              ) : (
+                payments?.filter((p) => p.status !== "pending").map((p: any) => (
+                  <PaymentItem key={p.id} payment={p} isAdmin={isAdmin} onConfirm={handleConfirm} onManage={openManage} />
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <TabsContent value="all" className="space-y-3 mt-4">
-        {payments?.length === 0 && (
-          <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum pagamento registrado nesta competência.</CardContent></Card>
-        )}
-        {payments?.map((p: any) => (
-          <PaymentCard key={p.id} payment={p} isAdmin={isAdmin} onConfirm={handleConfirm} />
-        ))}
-      </TabsContent>
+      {/* Modal de Gerenciamento de Pagamentos (Admin) */}
+      <Dialog open={!!editingPayment} onOpenChange={(open) => !open && setEditingPayment(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Pagamento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Valor (R$)</Label>
+                <Input type="number" min="0.01" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Competência</Label>
+                <Input type="month" value={editCompetence} onChange={(e) => setEditCompetence(e.target.value)} />
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground -mt-2">
+              Selecione o mês para que o sistema direcione este pagamento para a competência correta.
+            </p>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="confirmed">Confirmado</SelectItem>
+                  <SelectItem value="rejected">Recusado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Observações</Label>
+              <Input value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
+            </div>
+
+            <div className="flex justify-between pt-4 border-t">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir pagamento?</AlertDialogTitle>
+                    <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => editingPayment && deletePayment.mutate(editingPayment.id)} className="bg-destructive text-destructive-foreground">
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditingPayment(null)}>Cancelar</Button>
+                <Button onClick={() => updatePayment.mutate({ amount: editAmount, notes: editNotes, status: editStatus, competence: editCompetence })} disabled={updatePayment.isPending}>
+                  {updatePayment.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
-    </Tabs>
   );
 }
 
-function PaymentCard({ payment, isAdmin, onConfirm }: { payment: any; isAdmin: boolean; onConfirm: (id: string, status: "confirmed" | "rejected") => void }) {
+function PaymentItem({ payment, isAdmin, onConfirm, onManage }: { payment: any; isAdmin: boolean; onConfirm: (id: string, status: "confirmed" | "rejected") => void; onManage?: (payment: any) => void }) {
   const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
     pending: { label: "Pendente", variant: "secondary" },
     confirmed: { label: "Confirmado", variant: "default" },
@@ -354,38 +522,44 @@ function PaymentCard({ payment, isAdmin, onConfirm }: { payment: any; isAdmin: b
   const s = statusMap[payment.status] ?? statusMap.pending;
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="font-medium">{payment.payer_name}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {format(new Date(payment.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-            </p>
-            {payment.notes && <p className="text-xs text-muted-foreground mt-1">{payment.notes}</p>}
-            {payment.receipt_url && (
-              <a href={payment.receipt_url} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1">
-                <Image className="h-3 w-3" /> Ver comprovante
+    <div className="p-3 bg-background border rounded-lg shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-sm">{payment.payer_name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {format(new Date(payment.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+          </p>
+          {payment.notes && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{payment.notes}</p>}
+          {payment.receipt_url && (
+            <Button variant="outline" size="sm" className="h-7 text-xs mt-2 w-fit gap-1.5" asChild>
+              <a href={payment.receipt_url} target="_blank" rel="noopener noreferrer">
+                <ImageIcon className="h-3 w-3" /> Ver comprovante
               </a>
-            )}
-          </div>
-          <div className="text-right shrink-0 flex flex-col items-end gap-2">
-            <p className="text-lg font-bold">R$ {Number(payment.amount).toFixed(2)}</p>
-            <Badge variant={s.variant}>{s.label}</Badge>
-            {isAdmin && payment.status === "pending" && (
-              <div className="flex gap-1 mt-1">
-                <Button size="sm" variant="default" className="h-7 gap-1" onClick={() => onConfirm(payment.id, "confirmed")}>
-                  <Check className="h-3 w-3" /> Confirmar
-                </Button>
-                <Button size="sm" variant="destructive" className="h-7 gap-1" onClick={() => onConfirm(payment.id, "rejected")}>
-                  <X className="h-3 w-3" /> Recusar
-                </Button>
-              </div>
-            )}
-          </div>
+            </Button>
+          )}
         </div>
-      </CardContent>
-    </Card>
+        <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-1">
+            <p className="text-sm font-bold">R$ {Number(payment.amount).toFixed(2)}</p>
+            {isAdmin && onManage && (
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => onManage(payment)}>
+                <Settings className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          <Badge variant={s.variant} className="text-[10px] px-1.5 py-0 h-4">{s.label}</Badge>
+          {isAdmin && payment.status === "pending" && (
+            <div className="flex gap-1 mt-1">
+              <Button size="icon" variant="default" className="h-6 w-6" onClick={() => onConfirm(payment.id, "confirmed")}>
+                <Check className="h-3 w-3" />
+              </Button>
+              <Button size="icon" variant="destructive" className="h-6 w-6" onClick={() => onConfirm(payment.id, "rejected")}>
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

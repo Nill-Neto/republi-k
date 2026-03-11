@@ -27,6 +27,7 @@ import {
   BookOpen,
   Vote,
   Wallet,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -42,6 +43,7 @@ const sidebarCoreItems = [
 ];
 
 const adminItems = [
+  { to: "/admin", icon: Shield, label: "Administração" },
   { to: "/recurring", icon: RefreshCw, label: "Recorrências" },
   { to: "/invites", icon: UserPlus, label: "Convites" },
   { to: "/audit-log", icon: ScrollText, label: "Histórico" },
@@ -240,7 +242,9 @@ export function AppLayout() {
             <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
             <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-accent/10 blur-3xl" />
           </div>
-          <div className="max-w-7xl mx-auto w-full">
+          {/* O pb-32 é ~128px, garantindo que o cabeçalho sempre tenha espaço para encolher, 
+              mas SEM forçar a altura com min-h. Logo, telas curtas não terão barra de rolagem. */}
+          <div className="max-w-7xl mx-auto w-full pb-32">
             <Outlet />
           </div>
         </main>

@@ -32,6 +32,7 @@ const HouseRules = lazy(() => import("./pages/HouseRules"));
 const Polls = lazy(() => import("./pages/Polls"));
 const PersonalDashboard = lazy(() => import("./pages/PersonalDashboard"));
 const NewGroup = lazy(() => import("./pages/NewGroup"));
+const Admin = lazy(() => import("./pages/Admin"));
 const SidebarDemoPage = lazy(() => import("./pages/SidebarDemoPage"));
 const BackgroundPathsDemoPage = lazy(() => import("./pages/BackgroundPathsDemoPage"));
 
@@ -83,6 +84,7 @@ const AppShell = () => {
               <Route path="/rules" element={<HouseRules />} />
               <Route path="/polls" element={<Polls />} />
               <Route path="/audit-log" element={<AuditLog />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="/groups/new" element={<NewGroup />} />
               <Route path="/personal/dashboard" element={<PersonalDashboard />} />
               <Route path="/personal/financas" element={<Dashboard />} />
