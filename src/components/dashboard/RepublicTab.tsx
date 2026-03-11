@@ -39,10 +39,10 @@ export function RepublicTab({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">R$ {totalCollectivePendingPrevious.toFixed(2)}</div>
-            {totalCollectivePendingCurrent > 0 && (
+            <div className="text-3xl font-bold text-foreground">R$ {totalCollectivePendingCurrent.toFixed(2)}</div>
+            {totalCollectivePendingPrevious > 0 && (
               <p className="text-xs text-muted-foreground mt-1">
-                Competência atual: R$ {totalCollectivePendingCurrent.toFixed(2)}
+                Competências anteriores: R$ {totalCollectivePendingPrevious.toFixed(2)}
               </p>
             )}
             {isLate && totalCollectivePendingPrevious > 0 && (
