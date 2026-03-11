@@ -213,13 +213,17 @@ export default function Dashboard() {
     queryFn: async () => {
       if (!isAdmin || !membership?.group_id) return null;
 
-      const [membersRes, balancesRes, pendingPaymentsRes, rolesRes, pendingCollectiveSplitsRes, departuresRes] = await Promise.all([
+      const [membersRes, balancesRes, pendingPaymentsRes, collectiveSubmittedPaymentsRes, rolesRes, pendingCollectiveSplitsRes, departuresRes] = await Promise.all([
         supabase.from("group_members").select("user_id, active").eq("group_id", membership.group_id).eq("active", true),
         supabase.rpc("get_member_balances", { _group_id: membership.group_id }),
         supabase.from("payments")
           .select("id, expense_split_id, expense_splits(expenses(expense_type))")
           .eq("group_id", membership.group_id)
           .eq("status", "pending"),
+        supabase.from("payments")
+          .select("id, paid_by, amount, expense_split_id, status, expense_splits(expenses(expense_type))")
+          .eq("group_id", membership.group_id)
+          .in("status", ["pending", "confirmed"]),
         supabase.from("user_roles").select("user_id, role").eq("group_id", membership.group_id),
         supabase
           .from("expense_splits")
@@ -251,6 +255,30 @@ export default function Dashboard() {
         return type === 'collective';
       }).length;
 
+      const submittedCollectiveByUser = (collectiveSubmittedPaymentsRes.data || []).reduce((acc: Record<string, number>, payment: any) => {
+        const isCollectivePayment = !payment.expense_split_id || payment.expense_splits?.expenses?.expense_type === 'collective';
+        if (!isCollectivePayment) return acc;
+
+        const payerId = payment.paid_by;
+        if (!payerId) return acc;
+
+        acc[payerId] = (acc[payerId] || 0) + Number(payment.amount || 0);
+        return acc;
+      }, {});
+
+      const adjustedBalances = (balancesRes.data ?? []).map((balance: any) => {
+        const submittedAmount = Number(submittedCollectiveByUser[balance.user_id] || 0);
+        const currentBalance = Number(balance.balance || 0);
+
+        if (submittedAmount <= 0 || currentBalance >= 0) return balance;
+
+        const adjustment = Math.min(Math.abs(currentBalance), submittedAmount);
+        return {
+          ...balance,
+          balance: currentBalance + adjustment,
+        };
+      });
+
       const activeUserIds = new Set(members.map((m) => m.user_id));
       const exMembersDebt = (pendingCollectiveSplitsRes.data || [])
         .filter((s: any) => !activeUserIds.has(s.user_id))
@@ -264,7 +292,7 @@ export default function Dashboard() {
 
       return {
         members,
-        balances: balancesRes.data ?? [],
+        balances: adjustedBalances,
         pendingPaymentsCount: pendingCollectiveCount,
         exMembersDebt,
         departuresCount,
