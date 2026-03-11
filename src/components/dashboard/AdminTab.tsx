@@ -438,11 +438,11 @@ export function AdminTab({
           <div className="px-5 py-3 bg-muted/10 grid grid-cols-2 gap-4 border-b shrink-0">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Rateado</p>
-              <p className="text-sm font-semibold tabular-nums">R$ {selectedMember?.total_owed.toFixed(2)}</p>
+              <p className="text-sm font-semibold tabular-nums">R$ {selectedMember?.total_owed?.toFixed(2) || "0.00"}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Pago</p>
-              <p className="text-sm font-semibold tabular-nums text-success">R$ {selectedMember?.total_paid.toFixed(2)}</p>
+              <p className="text-sm font-semibold tabular-nums text-success">R$ {selectedMember?.total_paid?.toFixed(2) || "0.00"}</p>
             </div>
           </div>
 

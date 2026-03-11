@@ -45,7 +45,7 @@ export default function Admin() {
       const { data, error } = await supabase
         .from("expenses")
         .select(`
-          id, amount, expense_type,
+          id, amount, expense_type, title, category, purchase_date,
           expense_splits ( user_id, amount )
         `)
         .eq("group_id", membership!.group_id)

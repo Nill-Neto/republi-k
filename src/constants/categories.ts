@@ -32,6 +32,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Outros": "#64748b", // slate
 };
 
-export const getCategoryLabel = (key: string) => {
+export const getCategoryLabel = (key: string | undefined | null) => {
+  if (!key) return "Outros";
   return CATEGORY_LABELS[key] || key.charAt(0).toUpperCase() + key.slice(1);
 };
