@@ -1,4 +1,13 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -53,6 +62,7 @@ const withTimeout = <T,>(promise: Promise<T>, ms: number, message: string): Prom
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const isMountedRef = useRef(true);
   const [state, setState] = useState<AuthState>({
     user: null,
     session: null,
@@ -61,6 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     activeGroupId: localStorage.getItem(ACTIVE_GROUP_KEY),
     loading: true,
   });
+
+  const safeSetState = useCallback((updater: SetStateAction<AuthState>) => {
+    if (!isMountedRef.current) return;
+    setState(updater);
+  }, []);
 
   const fetchProfile = async (userId: string): Promise<Profile | null> => {
     const { data } = await supabase
@@ -107,16 +122,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserData = async (user: User) => {
     try {
-      const [profile, memberships] = await withTimeout(
-        Promise.all([
-          ensureProfile(user),
-          fetchMemberships(user.id),
-        ]),
-        10000,
-        "Tempo limite ao carregar perfil e grupos",
-      );
+      const [profileResult, membershipsResult] = await Promise.allSettled([
+        withTimeout(ensureProfile(user), 10000, "Tempo limite ao carregar perfil"),
+        withTimeout(fetchMemberships(user.id), 10000, "Tempo limite ao carregar grupos"),
+      ]);
 
-      setState((prev) => {
+      const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
+      const memberships = membershipsResult.status === "fulfilled" ? membershipsResult.value : [];
+
+      if (profileResult.status === "rejected") {
+        console.error("Erro ao carregar perfil", profileResult.reason);
+      }
+
+      if (membershipsResult.status === "rejected") {
+        console.error("Erro ao carregar grupos", membershipsResult.reason);
+      }
+
+      safeSetState((prev) => {
         // Auto-select active group: stored preference → first membership
         let activeGroupId = prev.activeGroupId;
         const validIds = memberships.map((m) => m.group_id);
@@ -137,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (error) {
       console.error("Erro ao carregar dados do usuário", error);
-      setState((prev) => ({
+      safeSetState((prev) => ({
         ...prev,
         profile: null,
         memberships: [],
@@ -147,13 +169,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    let isMounted = true;
-
-    const safeSetState: typeof setState = (updater) => {
-      if (!isMounted) return;
-      setState(updater);
-    };
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         const user = session?.user ?? null;
@@ -192,10 +207,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [safeSetState]);
 
   const setActiveGroupId = useCallback((groupId: string) => {
     localStorage.setItem(ACTIVE_GROUP_KEY, groupId);
