@@ -31,16 +31,16 @@ export default function Dashboard() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [rateioScope, setRateioScope] = useState<RateioScope>("previous");
-  const [activeTab, setActiveTab] = useState(isPersonalFinancePage ? "personal" : "republic");
+  const [activeTab, setActiveTab] = useState(isPersonalFinancePage ? "personal" : (isAdmin ? "admin" : "republic"));
   const [heroCompact, setHeroCompact] = useState(false);
 
   useEffect(() => {
     if (isPersonalFinancePage) {
       setActiveTab("personal");
     } else {
-      setActiveTab("republic");
+      setActiveTab(isAdmin ? "admin" : "republic");
     }
-  }, [isPersonalFinancePage]);
+  }, [isPersonalFinancePage, isAdmin]);
 
   // --- Group Settings & Initial Date Logic ---
   const { data: groupSettings } = useQuery({
