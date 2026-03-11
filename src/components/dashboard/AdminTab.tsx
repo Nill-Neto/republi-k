@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 import { parseLocalDate } from "@/lib/utils";
 import {
@@ -234,83 +235,120 @@ export function AdminTab({
       {/* Main Content Grid */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Saldo dos Moradores - 2 cols */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="h-4 w-4" /> Saldo dos Moradores
-              </CardTitle>
-              <Badge variant="outline" className="text-xs font-normal">
-                {members.length} ativo{members.length !== 1 ? "s" : ""}
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Saldo acumulado do rateio coletivo · Ordenado por situação
-            </p>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Card className="lg:col-span-2 cursor-pointer transition-colors hover:bg-muted/20">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Users className="h-4 w-4" /> Saldo dos Moradores
+                  </CardTitle>
+                  <Badge variant="outline" className="text-xs font-normal">
+                    {members.length} ativo{members.length !== 1 ? "s" : ""}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Saldo acumulado do rateio coletivo · Ordenado por situação
+                </p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {membersWithBalance.map(member => {
+                    const isDebt = member.balance < -0.05;
+                    const isCredit = member.balance > 0.05;
+
+                    return (
+                      <div
+                        key={member.user_id}
+                        className={`flex items-center justify-between px-6 py-3 transition-colors hover:bg-muted/50 ${isDebt ? "bg-destructive/5" : ""}`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar className="h-9 w-9 border border-border">
+                            <AvatarImage src={member.profile?.avatar_url} />
+                            <AvatarFallback className="text-xs font-medium bg-muted">
+                              {member.profile?.full_name?.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{member.profile?.full_name}</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground capitalize">
+                                {member.role === "admin" ? "Admin" : "Morador"}
+                              </span>
+                              {isDebt && (
+                                <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
+                                  Pendente
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right flex-shrink-0 ml-4">
+                          {isDebt ? (
+                            <span className="font-semibold text-sm tabular-nums text-destructive">
+                              -R$ {Math.abs(member.balance).toFixed(2)}
+                            </span>
+                          ) : isCredit ? (
+                            <span className="font-semibold text-sm tabular-nums text-success">
+                              +R$ {member.balance.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                              Em dia
+                            </span>
+                          )}
+                          <p className="text-[11px] text-muted-foreground tabular-nums">
+                            Rateio: R$ {member.total_owed.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {membersWithBalance.length === 0 && (
+                    <p className="text-sm text-muted-foreground px-6 py-8 text-center">
+                      Nenhum morador encontrado.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </DialogTrigger>
+
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Detalhamento do saldo dos moradores</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-2 max-h-[65vh] overflow-y-auto pr-1">
               {membersWithBalance.map(member => {
                 const isDebt = member.balance < -0.05;
                 const isCredit = member.balance > 0.05;
 
                 return (
-                  <div
-                    key={member.user_id}
-                    className={`flex items-center justify-between px-6 py-3 transition-colors hover:bg-muted/50 ${isDebt ? "bg-destructive/5" : ""}`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Avatar className="h-9 w-9 border border-border">
-                        <AvatarImage src={member.profile?.avatar_url} />
-                        <AvatarFallback className="text-xs font-medium bg-muted">
-                          {member.profile?.full_name?.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{member.profile?.full_name}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground capitalize">
-                            {member.role === "admin" ? "Admin" : "Morador"}
-                          </span>
-                          {isDebt && (
-                            <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
-                              Pendente
-                            </Badge>
-                          )}
-                        </div>
+                  <div key={`modal-${member.user_id}`} className="rounded-lg border p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-sm">{member.profile?.full_name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {member.role === "admin" ? "Admin" : "Morador"}
+                        </p>
                       </div>
+                      <span className={`font-semibold text-sm tabular-nums ${isDebt ? "text-destructive" : isCredit ? "text-success" : "text-foreground"}`}>
+                        {isDebt ? "-" : isCredit ? "+" : ""}R$ {Math.abs(member.balance).toFixed(2)}
+                      </span>
                     </div>
-
-                    <div className="text-right flex-shrink-0 ml-4">
-                      {isDebt ? (
-                        <span className="font-semibold text-sm tabular-nums text-destructive">
-                          -R$ {Math.abs(member.balance).toFixed(2)}
-                        </span>
-                      ) : isCredit ? (
-                        <span className="font-semibold text-sm tabular-nums text-success">
-                          +R$ {member.balance.toFixed(2)}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground flex items-center gap-1">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                          Em dia
-                        </span>
-                      )}
-                      <p className="text-[11px] text-muted-foreground tabular-nums">
-                        Rateio: R$ {member.total_owed.toFixed(2)}
-                      </p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <p>Rateio: <span className="tabular-nums text-foreground">R$ {member.total_owed.toFixed(2)}</span></p>
+                      <p>Pago: <span className="tabular-nums text-foreground">R$ {member.total_paid.toFixed(2)}</span></p>
                     </div>
                   </div>
                 );
               })}
-              {membersWithBalance.length === 0 && (
-                <p className="text-sm text-muted-foreground px-6 py-8 text-center">
-                  Nenhum morador encontrado.
-                </p>
-              )}
             </div>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
 
         {/* Sidebar */}
         <div className="space-y-4">
