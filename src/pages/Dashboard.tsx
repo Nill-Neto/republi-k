@@ -227,7 +227,7 @@ export default function Dashboard() {
         supabase.from("user_roles").select("user_id, role").eq("group_id", membership.group_id),
         supabase
           .from("expense_splits")
-          .select("user_id, amount, status, expenses!inner(group_id, expense_type)")
+          .select("id, user_id, amount, status, expenses!inner(id, title, category, group_id, expense_type, purchase_date)")
           .eq("status", "pending")
           .eq("expenses.group_id", membership.group_id)
           .eq("expenses.expense_type", "collective"),
@@ -297,6 +297,7 @@ export default function Dashboard() {
         exMembersDebt,
         departuresCount,
         redistributedCount,
+        allPendingCollectiveSplits: pendingCollectiveSplitsRes.data || [],
       };
     },
     enabled: !!membership?.group_id && isAdmin
@@ -632,6 +633,7 @@ export default function Dashboard() {
                 exMembersDebt={adminData.exMembersDebt}
                 departuresCount={adminData.departuresCount}
                 redistributedCount={adminData.redistributedCount}
+                allPendingCollectiveSplits={adminData.allPendingCollectiveSplits}
               />
             ) : (
               <div className="py-12 text-center text-muted-foreground">Carregando dados administrativos...</div>
