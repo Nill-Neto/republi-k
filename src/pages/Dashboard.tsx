@@ -3,13 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Users, CreditCard } from "lucide-react";
+import { User, Users, CreditCard, Wallet, LayoutDashboard, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, subDays, isAfter, isSameDay, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { parseLocalDate } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { PageHero } from "@/components/layout/PageHero";
 import { RepublicTab } from "@/components/dashboard/RepublicTab";
 import { PersonalTab } from "@/components/dashboard/PersonalTab";
 import { CardsTab } from "@/components/dashboard/CardsTab";
@@ -36,11 +37,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (isPersonalFinancePage) {
-      setActiveTab("personal");
+      setActiveTab("republic");
     } else {
-      setActiveTab(isAdmin ? "admin" : "republic");
+      setActiveTab("");
     }
-  }, [isPersonalFinancePage, isAdmin]);
+  }, [isPersonalFinancePage]);
 
   // --- Group Settings & Initial Date Logic ---
   const { data: groupSettings } = useQuery({
@@ -450,13 +451,11 @@ export default function Dashboard() {
 
   const compactTabsList = (
     <TabsList className={tabListClass}>
-      {!isPersonalFinancePage && (
-        <TabsTrigger value="republic" className={tabTriggerClass}>
-          <Users className="h-3.5 w-3.5 mr-1.5" /> República
-        </TabsTrigger>
-      )}
       {isPersonalFinancePage && (
         <>
+          <TabsTrigger value="republic" className={tabTriggerClass}>
+            <Users className="h-3.5 w-3.5 mr-1.5" /> República
+          </TabsTrigger>
           <TabsTrigger value="personal" className={tabTriggerClass}>
             <User className="h-3.5 w-3.5 mr-1.5" /> Pessoal
           </TabsTrigger>
@@ -470,29 +469,37 @@ export default function Dashboard() {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 animate-in fade-in duration-500">
-      <DashboardHeader 
-        userName={profile?.full_name}
-        groupName={membership?.group_name}
-        currentDate={currentDate}
-        cycleStart={cycleStart}
-        cycleEnd={cycleEnd}
-        cycleLimitDate={cycleLimitDate}
-        onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
-        onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
+      <PageHero
+        title={isPersonalFinancePage ? "Minhas Finanças" : "Painel Geral"}
+        subtitle={isPersonalFinancePage ? "Seu resumo financeiro e rateios." : "Visão geral da moradia."}
+        icon={isPersonalFinancePage ? <Wallet className="h-4 w-4" /> : <LayoutDashboard className="h-4 w-4" />}
         compactTabs={compactTabsList}
         onCompactChange={setHeroCompact}
+        actions={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
+                {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        }
       />
 
       <div className="space-y-4">
         {!heroCompact && (
         <TabsList className={tabListClass}>
-          {!isPersonalFinancePage && (
-            <TabsTrigger value="republic" className={tabTriggerClass}>
-              <Users className="h-3.5 w-3.5 mr-1.5" /> República
-            </TabsTrigger>
-          )}
           {isPersonalFinancePage && (
             <>
+              <TabsTrigger value="republic" className={tabTriggerClass}>
+                <Users className="h-3.5 w-3.5 mr-1.5" /> República
+              </TabsTrigger>
               <TabsTrigger value="personal" className={tabTriggerClass}>
                 <User className="h-3.5 w-3.5 mr-1.5" /> Pessoal
               </TabsTrigger>
@@ -504,7 +511,8 @@ export default function Dashboard() {
         </TabsList>
         )}
 
-        <TabsContent value="republic" className="space-y-6">
+        {isPersonalFinancePage && (
+          <TabsContent value="republic" className="space-y-6">
           <RepublicTab
             collectiveExpenses={collectiveExpenses}
             totalMonthExpenses={totalMonthExpenses}
@@ -515,8 +523,10 @@ export default function Dashboard() {
             onPayRateio={(scope) => { setRateioScope(scope); setPayRateioOpen(true); }}
           />
         </TabsContent>
+        )}
 
-        <TabsContent value="personal" className="space-y-6">
+        {isPersonalFinancePage && (
+          <TabsContent value="personal" className="space-y-6">
           <PersonalTab
             totalIndividualPending={totalIndividualPending}
             totalCollectivePendingPrevious={totalCollectivePendingPrevious}
@@ -532,8 +542,10 @@ export default function Dashboard() {
             myPersonalExpenses={myPersonalExpenses}
           />
         </TabsContent>
+        )}
 
-        <TabsContent value="cards" className="space-y-6">
+        {isPersonalFinancePage && (
+          <TabsContent value="cards" className="space-y-6">
           <CardsTab 
             totalBill={totalBill}
             currentDate={currentDate}
@@ -544,6 +556,7 @@ export default function Dashboard() {
             isLoading={isLoadingCreditCards || isLoadingBillInstallments}
           />
         </TabsContent>
+        )}
       </div>
 
       <PaymentDialogs
