@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -8,13 +8,14 @@ import { BackgroundPathsLayer } from "@/components/ui/background-paths";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 import Login from "./pages/Login";
 
 const Index = lazy(() => import("./pages/Index"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const AcceptInvite = lazy(() => import("./pages/AcceptInvite"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Members = lazy(() => import("./pages/Members"));
 const Expenses = lazy(() => import("./pages/Expenses"));
 const Payments = lazy(() => import("./pages/Payments"));
@@ -36,12 +37,6 @@ const SidebarDemoPage = lazy(() => import("./pages/SidebarDemoPage"));
 const BackgroundPathsDemoPage = lazy(() => import("./pages/BackgroundPathsDemoPage"));
 
 const queryClient = new QueryClient();
-
-// Smart redirector for the /dashboard path
-const DashboardRedirect = () => {
-  const { isAdmin } = useAuth();
-  return <Navigate to={isAdmin ? "/admin" : "/personal/dashboard"} replace />;
-};
 
 const AppShell = () => {
   const { pathname } = useLocation();
@@ -75,7 +70,7 @@ const AppShell = () => {
                 </ProtectedRoute>
               }
             >
-              <Route path="/dashboard" element={<DashboardRedirect />} />
+              <Route path="/dashboard" element={<Dashboard key="dashboard-general" />} />
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/payments" element={<Payments />} />
               <Route path="/recurring" element={<RecurringExpenses />} />
@@ -92,6 +87,7 @@ const AppShell = () => {
               <Route path="/admin" element={<Admin />} />
               <Route path="/groups/new" element={<NewGroup />} />
               <Route path="/personal/dashboard" element={<PersonalDashboard />} />
+              <Route path="/personal/financas" element={<Dashboard />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

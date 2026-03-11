@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  LayoutDashboard,
   Users,
   UserPlus,
   ScrollText,
@@ -33,11 +34,12 @@ import { motion } from "framer-motion";
 import { Sidebar, SidebarBody } from "@/components/ui/animated-sidebar";
 
 const sidebarCoreItems = [
+  { to: "/dashboard", icon: LayoutDashboard, label: "Painel Geral" },
   { to: "/expenses", icon: Receipt, label: "Despesas" },
   { to: "/payments", icon: CreditCard, label: "Pagamentos" },
   { to: "/inventory", icon: Package, label: "Estoque" },
   { to: "/shopping", icon: ShoppingCart, label: "Compras" },
-  { to: "/personal/dashboard", icon: Wallet, label: "Minhas Finanças" },
+  { to: "/personal/financas", icon: Wallet, label: "Minhas Finanças" },
 ];
 
 const adminItems = [
