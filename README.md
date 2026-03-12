@@ -1,73 +1,78 @@
-# Welcome to your Lovable project
+# Republi-K 🏠
 
-## Project info
+**Republi-K** é um sistema completo e moderno para gestão de moradias compartilhadas (repúblicas, colivings e apartamentos divididos). Ele simplifica o controle financeiro, a organização de tarefas e a convivência entre os moradores, trazendo transparência para o dia a dia da casa.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🚀 Principais Funcionalidades
 
-## How can I edit this code?
+- **Gestão Financeira Transparente**: Controle de despesas coletivas e individuais, com cálculo automático de rateio (divisão igualitária ou baseada em percentuais/pesos).
+- **Controle de Pagamentos**: Envio de comprovantes de pagamento de rateio e pendências diretamente pela plataforma, com fluxo de aprovação exclusivo para administradores.
+- **Despesas Recorrentes**: Configuração de contas fixas mensais (aluguel, internet, condomínio, etc.) que são geradas automaticamente a cada ciclo.
+- **Cartões de Crédito**: Organização de despesas pessoais parceladas por faturas e cartões de crédito.
+- **Estoque e Compras**: Controle de itens de uso comum e listas de compras colaborativas para mercado e manutenção.
+- **Ferramentas de Convivência**: Mural de avisos interativo, regras da casa definidas pelo grupo e sistema de votações para decisões democráticas.
+- **Prestação de Contas**: Geração de relatórios mensais detalhados em formatos PDF e CSV.
+- **Dashboards Dinâmicos**: Visões separadas para a casa, gastos pessoais e uma visão gerencial para administradores acompanharem a inadimplência.
 
-There are several ways of editing your application.
+## 🛠️ Tecnologias Utilizadas
 
-**Use Lovable**
+- **Frontend**: React 18 com Vite e TypeScript
+- **Estilização**: Tailwind CSS, shadcn/ui (Radix UI) e Framer Motion (para animações)
+- **Roteamento**: React Router Dom v6
+- **Gerenciamento de Estado & Dados**: TanStack Query v5 (React Query)
+- **Backend & Autenticação**: Supabase (PostgreSQL, Storage para comprovantes e documentos, Edge Functions e OAuth)
+- **Visualização de Dados**: Recharts
+- **Formulários e Validação**: React Hook Form integrado com Zod
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 📁 Estrutura do Projeto
 
-Changes made via Lovable will be committed automatically to this repo.
+O projeto segue uma arquitetura baseada em features e boas práticas de React moderno:
 
-**Use your preferred IDE**
+- `/src/components`: Componentes reutilizáveis, divididos entre componentes base de UI (`/ui`), layout (`/layout`) e lógicas específicas de negócio (`/dashboard`, `/onboarding`).
+- `/src/contexts`: Gerenciamento de estado global da aplicação (ex: `AuthContext` com gerenciamento de sessão e perfil do usuário ativo).
+- `/src/pages`: Páginas da aplicação mapeadas pelo roteador.
+- `/src/hooks`: Custom hooks para abstração de lógica complexa (ex: `useCycleDates` para lidar com as datas de fechamento e vencimento de despesas).
+- `/src/integrations/supabase`: Cliente do Supabase e as tipagens estritas geradas a partir do banco de dados relacional.
+- `/src/lib`: Funções utilitárias (ex: formatação monetária, máscaras de CPF).
+- `/supabase`: Configurações de infraestrutura do backend, Edge Functions (ex: envio de emails e PDF gen) e migrações SQL.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## ⚙️ Pré-requisitos
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Node.js** (versão 18 ou superior recomendada)
+- Um gerenciador de pacotes: npm, yarn, pnpm ou bun
+- Uma conta no [Supabase](https://supabase.com/) contendo o schema de tabelas e as Edge Functions do projeto devidamente configuradas.
 
-Follow these steps:
+## 🚀 Como executar o projeto localmente
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. **Clone o repositório:**
+   ```bash
+   git clone <URL_DO_REPOSITORIO>
+   cd <NOME_DA_PASTA>
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. **Instale as dependências:**
+   ```bash
+   npm install
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. **Inicie o servidor de desenvolvimento:**
+   ```bash
+   npm run dev
+   ```
+   A aplicação será iniciada com suporte a hot-reload, normalmente disponível na porta `8080` (ex: `http://localhost:8080`).
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## 🔑 Variáveis de Ambiente
+
+As principais integrações necessitam da configuração correta do ambiente (via `.env` localmente ou configurado na plataforma de hospedagem). Exemplo:
+
+```env
+VITE_APP_URL="http://localhost:8080"
+# (As credenciais do Supabase podem ser parametrizadas via variáveis em ambientes de produção)
 ```
 
-**Edit a file directly in GitHub**
+## 🏗️ Build para Produção
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Para gerar a versão de produção otimizada:
+```bash
+npm run build
+```
+Os artefatos estáticos serão gerados na pasta `/dist`, prontos para serem hospedados em plataformas como Vercel, Netlify ou Render.
