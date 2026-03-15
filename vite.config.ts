@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  envPrefix: ["VITE_", "APP_"],
   plugins: [dyadComponentTagger(), react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {

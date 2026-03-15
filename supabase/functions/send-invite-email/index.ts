@@ -6,6 +6,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const DEFAULT_LOCAL_PUBLIC_URL = "http://localhost:8080";
+
+const resolveAppPublicUrl = () => {
+  const configuredUrl = Deno.env.get("APP_PUBLIC_URL")?.trim().replace(/\/$/, "");
+  if (configuredUrl) {
+    console.info(`[send-invite-email] APP_PUBLIC_URL configured: ${configuredUrl}`);
+    return configuredUrl;
+  }
+
+  const stage = Deno.env.get("ENVIRONMENT") ?? Deno.env.get("SUPABASE_ENV") ?? "unknown";
+  const isLocal = Deno.env.get("SUPABASE_URL")?.includes("127.0.0.1") || stage === "local" || stage === "development";
+
+  if (isLocal) {
+    console.warn(
+      `[send-invite-email] APP_PUBLIC_URL is not configured for ${stage}. Falling back to ${DEFAULT_LOCAL_PUBLIC_URL}.`
+    );
+    return DEFAULT_LOCAL_PUBLIC_URL;
+  }
+
+  const message =
+    `[send-invite-email] APP_PUBLIC_URL is not configured for ${stage}. Configure this variable to ensure invite links use the correct domain.`;
+  console.error(message);
+  throw new Error(message);
+};
+
+const APP_PUBLIC_URL = resolveAppPublicUrl();
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -50,7 +77,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const inviteLink = `https://republi-k.lovable.app/invite?token=${token}`;
+    const inviteLink = `${APP_PUBLIC_URL}/invite?token=${token}`;
 
     const resend = new Resend(resendApiKey);
 

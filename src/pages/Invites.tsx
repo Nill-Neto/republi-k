@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { PUBLIC_APP_URL } from "@/config/app";
+import { APP_PUBLIC_URL } from "@/config/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -172,7 +172,7 @@ export default function Invites() {
   };
 
   const copyLink = (token: string, title = "Link copiado!") => {
-    const link = `${PUBLIC_APP_URL}/invite?token=${token}`;
+    const link = `${APP_PUBLIC_URL}/invite?token=${token}`;
     navigator.clipboard.writeText(link);
     toast({ title, description: "Envie para o morador." });
   };
