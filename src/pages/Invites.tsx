@@ -12,13 +12,72 @@ import { Loader2, Send, Copy, RefreshCw, UserPlus, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { PageHero } from "@/components/layout/PageHero";
 
+type DeliveryStatus = "pending" | "sent" | "failed";
+
 const emailSchema = z.string().trim().email("Email inválido").max(255);
 
-const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+const inviteStatusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Pendente", variant: "outline" },
   accepted: { label: "Aceito", variant: "default" },
   rejected: { label: "Recusado", variant: "destructive" },
   expired: { label: "Expirado", variant: "secondary" },
+};
+
+const deliveryStatusMap: Record<DeliveryStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  pending: { label: "E-mail pendente", variant: "outline" },
+  sent: { label: "E-mail enviado", variant: "default" },
+  failed: { label: "Falha no envio", variant: "destructive" },
+};
+
+const sendInviteEmail = async ({
+  email,
+  token,
+  groupName,
+  inviterName,
+}: {
+  email: string;
+  token: string;
+  groupName?: string;
+  inviterName?: string;
+}) => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+
+  if (!accessToken) {
+    return {
+      success: false,
+      error: "Sessão inválida para enviar e-mail.",
+    };
+  }
+
+  try {
+    const response = await fetch(
+      "https://mqorykrxvqfkifjkveqe.supabase.co/functions/v1/send-invite-email",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ email, token, groupName, inviterName }),
+      },
+    );
+
+    if (!response.ok) {
+      const bodyText = await response.text();
+      return {
+        success: false,
+        error: bodyText || "Falha ao enviar e-mail.",
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro inesperado ao enviar e-mail.",
+    };
+  }
 };
 
 export default function Invites() {
@@ -27,6 +86,7 @@ export default function Invites() {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   const { data: invites, isLoading } = useQuery({
     queryKey: ["invites", membership?.group_id],
@@ -72,53 +132,121 @@ export default function Invites() {
 
   const sendInvite = useMutation({
     mutationFn: async (inviteEmail: string) => {
-      const { data, error } = await supabase.from("invites").insert({
-        group_id: membership!.group_id,
-        invited_by: user!.id,
-        email: inviteEmail.toLowerCase().trim(),
-      }).select().single();
+      const { data: invite, error } = await supabase
+        .from("invites")
+        .insert({
+          group_id: membership!.group_id,
+          invited_by: user!.id,
+          email: inviteEmail.toLowerCase().trim(),
+          email_delivery_status: "pending",
+          email_error: null,
+          email_sent_at: null,
+        })
+        .select()
+        .single();
       if (error) throw error;
 
-      // Send email via edge function
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      
-      if (token && data) {
-        const response = await fetch(
-          `https://mqorykrxvqfkifjkveqe.supabase.co/functions/v1/send-invite-email`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              email: data.email,
-              token: data.token,
-              groupName: group?.name,
-              inviterName: profile?.full_name,
-            }),
-          }
-        );
-        
-        if (!response.ok) {
-          console.error("Failed to send invite email:", await response.text());
-        }
-      }
-      
-      return data;
+      const deliveryResult = await sendInviteEmail({
+        email: invite.email,
+        token: invite.token,
+        groupName: group?.name,
+        inviterName: profile?.full_name,
+      });
+
+      const deliveryStatus: DeliveryStatus = deliveryResult.success ? "sent" : "failed";
+      const deliveryError = deliveryResult.success ? null : deliveryResult.error;
+
+      const { error: updateError } = await supabase
+        .from("invites")
+        .update({
+          email_delivery_status: deliveryStatus,
+          email_error: deliveryError,
+          email_sent_at: deliveryResult.success ? new Date().toISOString() : null,
+        })
+        .eq("id", invite.id);
+      if (updateError) throw updateError;
+
+      return {
+        deliveryStatus,
+        deliveryError,
+      };
     },
-    onSuccess: () => {
+    onSuccess: ({ deliveryStatus, deliveryError }) => {
       queryClient.invalidateQueries({ queryKey: ["invites"] });
       setEmail("");
-      toast({ title: "Convite enviado!", description: "O email foi enviado para o morador." });
+
+      if (deliveryStatus === "sent") {
+        toast({
+          title: "Convite criado",
+          description: "Convite criado e e-mail enviado com sucesso.",
+        });
+        return;
+      }
+
+      toast({
+        title: "Convite criado",
+        description: `Convite criado, mas o e-mail falhou. ${deliveryError ?? "Tente reenviar."}`,
+        variant: "destructive",
+      });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       const msg = err.message?.includes("unique")
         ? "Este email já foi convidado."
         : err.message;
       toast({ title: "Erro", description: msg, variant: "destructive" });
     },
+  });
+
+  const resendInviteEmail = useMutation({
+    mutationFn: async (inviteId: string) => {
+      const invite = invites?.find((item) => item.id === inviteId);
+      if (!invite) {
+        throw new Error("Convite não encontrado para reenvio.");
+      }
+
+      const { error: pendingError } = await supabase
+        .from("invites")
+        .update({ email_delivery_status: "pending", email_error: null })
+        .eq("id", inviteId);
+      if (pendingError) throw pendingError;
+
+      const deliveryResult = await sendInviteEmail({
+        email: invite.email,
+        token: invite.token,
+        groupName: group?.name,
+        inviterName: profile?.full_name,
+      });
+
+      const { error: updateError } = await supabase
+        .from("invites")
+        .update({
+          email_delivery_status: deliveryResult.success ? "sent" : "failed",
+          email_error: deliveryResult.success ? null : deliveryResult.error,
+          email_sent_at: deliveryResult.success ? new Date().toISOString() : null,
+        })
+        .eq("id", inviteId);
+      if (updateError) throw updateError;
+
+      return deliveryResult;
+    },
+    onMutate: (inviteId) => setResendingId(inviteId),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["invites"] });
+      if (result.success) {
+        toast({ title: "E-mail enviado", description: "O convite foi reenviado com sucesso." });
+        return;
+      }
+
+      toast({
+        title: "Falha no reenvio",
+        description: result.error ?? "Não foi possível reenviar o convite.",
+        variant: "destructive",
+      });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    },
+    onSettled: () => setResendingId(null),
   });
 
   const regenerateInvite = useMutation({
@@ -138,7 +266,7 @@ export default function Invites() {
       queryClient.invalidateQueries({ queryKey: ["invites"] });
       copyLink(newToken, "Novo link gerado!");
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     },
     onSettled: () => setRegeneratingId(null),
@@ -156,7 +284,7 @@ export default function Invites() {
       queryClient.invalidateQueries({ queryKey: ["invites"] });
       toast({ title: "Convite excluído" });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     },
   });
@@ -195,7 +323,10 @@ export default function Invites() {
             <div className="flex-1 space-y-1">
               <Input
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError("");
+                }}
                 placeholder="email@exemplo.com"
                 type="email"
                 className={emailError ? "border-destructive" : ""}
@@ -218,8 +349,10 @@ export default function Invites() {
           <p className="text-sm text-muted-foreground">Nenhum convite enviado ainda.</p>
         ) : (
           invites.map((inv) => {
-            const st = statusMap[inv.status] ?? statusMap.pending;
+            const inviteStatus = inviteStatusMap[inv.status] ?? inviteStatusMap.pending;
+            const deliveryStatus = deliveryStatusMap[(inv.email_delivery_status as DeliveryStatus) ?? "pending"];
             const isRegenLoading = regeneratingId === inv.id && regenerateInvite.isPending;
+            const isResendLoading = resendingId === inv.id && resendInviteEmail.isPending;
 
             return (
               <Card key={inv.id}>
@@ -229,9 +362,31 @@ export default function Invites() {
                     <p className="text-xs text-muted-foreground">
                       Enviado em {new Date(inv.created_at).toLocaleDateString("pt-BR")}
                     </p>
+                    {inv.email_error && inv.email_delivery_status === "failed" && (
+                      <p className="text-xs text-destructive mt-1 truncate">{inv.email_error}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={st.variant}>{st.label}</Badge>
+                    <Badge variant={inviteStatus.variant}>{inviteStatus.label}</Badge>
+                    <Badge variant={deliveryStatus.variant}>{deliveryStatus.label}</Badge>
+
+                    {inv.email_delivery_status === "failed" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => resendInviteEmail.mutate(inv.id)}
+                        disabled={isResendLoading}
+                        title="Reenviar e-mail"
+                        aria-label={`Reenviar e-mail do convite para ${inv.email}`}
+                      >
+                        {isResendLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
+
                     {inv.status === "pending" && (
                       <>
                         <Button
