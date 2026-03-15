@@ -22,6 +22,13 @@ export default function Profile() {
   
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [generatingCsv, setGeneratingCsv] = useState(false);
+  const today = new Date();
+  const [reportStartDate, setReportStartDate] = useState(
+    new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10),
+  );
+  const [reportEndDate, setReportEndDate] = useState(
+    new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10),
+  );
 
   const updateProfile = useMutation({
     mutationFn: async () => {
@@ -40,13 +47,36 @@ export default function Profile() {
 
   const generateReport = async (format: 'pdf' | 'csv') => {
     if (!membership) return;
+
+    if (!reportStartDate || !reportEndDate) {
+      toast({
+        title: "Informe o período",
+        description: "Selecione data inicial e final para gerar o relatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (reportStartDate > reportEndDate) {
+      toast({
+        title: "Período inválido",
+        description: "A data inicial não pode ser maior que a data final.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const setLoading = format === 'pdf' ? setGeneratingPdf : setGeneratingCsv;
     setLoading(true);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-report", {
-        body: { group_id: membership.group_id, format },
+        body: {
+          group_id: membership.group_id,
+          format,
+          start_date: reportStartDate,
+          end_date: reportEndDate,
+        },
       });
 
       if (error) throw error;
@@ -65,7 +95,8 @@ export default function Profile() {
       const a = document.createElement("a");
       a.href = url;
       const ext = format === 'pdf' ? 'pdf' : 'csv';
-      a.download = `relatorio-${new Date().toISOString().slice(0, 10)}.${ext}`;
+      const fallbackFileName = `relatorio-${reportStartDate.slice(0, 7)}.${ext}`;
+      a.download = data.filename || fallbackFileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -145,7 +176,31 @@ export default function Profile() {
           </CardTitle>
           <CardDescription>Baixe o resumo financeiro da moradia</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-3">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="report-start-date">Data inicial</Label>
+              <Input
+                id="report-start-date"
+                type="date"
+                value={reportStartDate}
+                onChange={(e) => setReportStartDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="report-end-date">Data final</Label>
+              <Input
+                id="report-end-date"
+                type="date"
+                value={reportEndDate}
+                onChange={(e) => setReportEndDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
           <Button 
             variant="outline" 
             onClick={() => generateReport('pdf')} 
@@ -165,6 +220,7 @@ export default function Profile() {
             {generatingCsv ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />}
             {generatingCsv ? "Gerando CSV..." : "Baixar CSV"}
           </Button>
+          </div>
         </CardContent>
       </Card>
 

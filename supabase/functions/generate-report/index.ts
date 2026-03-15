@@ -17,6 +17,22 @@ const escapeCsv = (str: any) => {
   return s;
 };
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_RANGE_DAYS = 365;
+
+const parseIsoDate = (value: unknown, field: string) => {
+  if (typeof value !== "string" || !DATE_RE.test(value)) {
+    throw new Error(`${field} must be in YYYY-MM-DD format`);
+  }
+
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`${field} is invalid`);
+  }
+
+  return parsed;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -54,19 +70,37 @@ Deno.serve(async (req) => {
     const supabase = serviceClient;
 
     const body = await req.json();
-    const { group_id, format = 'pdf' } = body;
+    const { group_id, format = 'pdf', start_date, end_date } = body;
 
-    console.log("[generate-report] Request parameters:", { group_id, format, user_id: user.id });
+    console.log("[generate-report] Request parameters:", { group_id, format, start_date, end_date, user_id: user.id });
 
     if (!group_id) {
       return new Response(JSON.stringify({ error: "group_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+    const startDate = parseIsoDate(start_date, "start_date");
+    const endDate = parseIsoDate(end_date, "end_date");
 
-    console.log("[generate-report] Fetching data for cycle:", { startOfMonth, endOfMonth });
+    if (startDate > endDate) {
+      return new Response(JSON.stringify({ error: "start_date must be before or equal to end_date" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const rangeMs = endDate.getTime() - startDate.getTime();
+    const rangeDays = Math.floor(rangeMs / (1000 * 60 * 60 * 24)) + 1;
+    if (rangeDays > MAX_RANGE_DAYS) {
+      return new Response(JSON.stringify({ error: `date range cannot exceed ${MAX_RANGE_DAYS} days` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const startDateTime = `${start_date}T00:00:00.000Z`;
+    const endDateTime = `${end_date}T23:59:59.999Z`;
+
+    console.log("[generate-report] Fetching data for cycle:", { startDateTime, endDateTime, rangeDays });
 
     const [groupRes, expensesRes, balancesRes, paymentsRes] = await Promise.all([
       supabase.from("groups").select("name").eq("id", group_id).maybeSingle(),
@@ -74,8 +108,8 @@ Deno.serve(async (req) => {
         .from("expenses")
         .select("title, amount, category, expense_type, created_at, purchase_date, created_by")
         .eq("group_id", group_id)
-        .gte("purchase_date", startOfMonth)
-        .lte("purchase_date", endOfMonth)
+        .gte("purchase_date", startDateTime)
+        .lte("purchase_date", endDateTime)
         .order("purchase_date"),
       // Use user-scoped client because get_member_balances checks auth.uid()
       userClient.rpc("get_member_balances", { _group_id: group_id }),
@@ -83,8 +117,8 @@ Deno.serve(async (req) => {
         .from("payments")
         .select("amount, status, created_at")
         .eq("group_id", group_id)
-        .gte("created_at", startOfMonth)
-        .lte("created_at", endOfMonth),
+        .gte("created_at", startDateTime)
+        .lte("created_at", endDateTime),
     ]);
 
     if (groupRes.error) console.error("[generate-report] Group fetch error:", groupRes.error);
@@ -141,7 +175,7 @@ Deno.serve(async (req) => {
       contentType = "application/pdf";
       const totalExpenses = expenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
       const totalPayments = payments.filter((p: any) => p.status === "confirmed").reduce((s: number, p: any) => s + Number(p.amount), 0);
-      const monthName = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      const periodLabel = `${start_date} até ${end_date}`;
 
       const pdfDoc = await PDFDocument.create();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -165,7 +199,7 @@ Deno.serve(async (req) => {
 
       drawText(`RELATORIO MENSAL - ${groupName.toUpperCase()}`, { size: 18, font: fontBold });
       y -= 10;
-      drawText(`Periodo: ${monthName}`, { size: 12 });
+      drawText(`Periodo: ${periodLabel}`, { size: 12 });
       y -= 20;
 
       drawText("RESUMO", { size: 14, font: fontBold });
@@ -202,12 +236,22 @@ Deno.serve(async (req) => {
 
     console.log("[generate-report] File generated successfully");
 
-    return new Response(JSON.stringify({ file: fileData, contentType }), {
+    const monthStamp = start_date.slice(0, 7);
+    const extension = format === "csv" ? "csv" : "pdf";
+    const filename = `relatorio-${monthStamp}.${extension}`;
+
+    return new Response(JSON.stringify({ file: fileData, contentType, filename }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (err: any) {
     console.error("[generate-report] Unexpected error:", err);
+    if (err?.message?.includes("start_date") || err?.message?.includes("end_date")) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: err.message || "Internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
