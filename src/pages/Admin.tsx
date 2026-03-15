@@ -1,46 +1,26 @@
-import { useState, useEffect } from "react";
-import { format, addMonths, subMonths, subDays } from "date-fns";
+import { useState } from "react";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminTab } from "@/components/dashboard/AdminTab";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { useCycleDates } from "@/hooks/useCycleDates";
 
 export default function Admin() {
   const { user, membership, isAdmin, profile } = useAuth();
   const [heroCompact, setHeroCompact] = useState(false);
   
-  const { data: groupSettings } = useQuery({
-    queryKey: ["group-settings", membership?.group_id],
-    queryFn: async () => {
-      const { data } = await supabase.from("groups").select("closing_day, due_day").eq("id", membership!.group_id).single();
-      return data;
-    },
-    enabled: !!membership?.group_id
-  });
-
-  const closingDay = groupSettings?.closing_day || 1;
-
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
-
-  useEffect(() => {
-    if (groupSettings) {
-      const today = new Date();
-      if (today.getDate() >= groupSettings.closing_day) {
-        setCurrentDate(addMonths(today, 1));
-      } else {
-        setCurrentDate(today);
-      }
-    }
-  }, [groupSettings]);
-
-  const dueDay = groupSettings?.due_day || 10;
-  const cycleStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, closingDay);
-  const cycleEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), closingDay);
-  
-  const cycleDueDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dueDay);
-  const cycleLimitDate = subDays(cycleDueDate, 1);
+  const {
+    currentDate,
+    cycleStart,
+    cycleEnd,
+    cycleLimitDate,
+    nextMonth,
+    prevMonth,
+    closingDay,
+  } = useCycleDates(membership?.group_id);
 
   const { data: expensesInCycle = [] } = useQuery({
     queryKey: ["expenses-dashboard", membership?.group_id, cycleStart.toISOString(), cycleEnd.toISOString()],
@@ -203,8 +183,8 @@ export default function Admin() {
         cycleStart={cycleStart}
         cycleEnd={cycleEnd}
         cycleLimitDate={cycleLimitDate}
-        onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
-        onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
+        onNextMonth={nextMonth}
+        onPrevMonth={prevMonth}
         onCompactChange={setHeroCompact}
       />
 

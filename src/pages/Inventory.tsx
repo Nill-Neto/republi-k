@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,10 +22,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Plus, AlertTriangle, Minus, PlusCircle, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, addMonths, subMonths, subDays } from "date-fns";
+import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PageHero } from "@/components/layout/PageHero";
 import { ScrollRevealGroup } from "@/components/ui/scroll-reveal";
+import { useCycleDates } from "@/hooks/useCycleDates";
 
 const categories = [
   { value: "limpeza", label: "Limpeza" },
@@ -46,34 +47,7 @@ export default function Inventory() {
   const [filter, setFilter] = useState("all");
   const [form, setForm] = useState({ name: "", category: "geral", quantity: "1", unit: "un", min_quantity: "1" });
 
-  // --- Date Cycle Logic ---
-  const { data: groupSettings } = useQuery({
-    queryKey: ["group-settings-inventory", membership?.group_id],
-    queryFn: async () => {
-      const { data } = await supabase.from("groups").select("closing_day").eq("id", membership!.group_id).single();
-      return data;
-    },
-    enabled: !!membership?.group_id
-  });
-
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
-
-  useEffect(() => {
-    if (groupSettings) {
-      const today = new Date();
-      if (today.getDate() >= (groupSettings.closing_day || 1)) {
-        setCurrentDate(addMonths(today, 1));
-      } else {
-        setCurrentDate(today);
-      }
-    }
-  }, [groupSettings]);
-
-  const closingDay = groupSettings?.closing_day || 1;
-  const cycleStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, closingDay);
-  const cycleEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), closingDay);
-  cycleStart.setHours(0, 0, 0, 0);
-  cycleEnd.setHours(0, 0, 0, 0);
+  const { currentDate, cycleStart, cycleEnd, nextMonth, prevMonth } = useCycleDates(membership?.group_id);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["inventory", membership?.group_id, cycleStart.toISOString(), cycleEnd.toISOString()],
@@ -154,13 +128,13 @@ export default function Inventory() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {/* Month Selector */}
           <div className="flex items-center gap-2 bg-card border rounded-lg p-1 shadow-sm">
-             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth}>
                <ChevronLeft className="h-4 w-4" />
              </Button>
              <div className="px-2 text-sm font-medium min-w-[140px] text-center capitalize">
                {format(currentDate, "MMMM yyyy", { locale: ptBR })}
              </div>
-             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextMonth}>
                <ChevronRight className="h-4 w-4" />
              </Button>
            </div>

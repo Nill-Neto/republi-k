@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { addMonths, subMonths, subDays, isAfter, isSameDay } from "date-fns";
+import { addMonths, subMonths } from "date-fns";
+import { getCycleDates, getInitialCycleReferenceDate } from "@/lib/cycleDates";
 
 export function useCycleDates(groupId: string | undefined) {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
@@ -14,35 +15,21 @@ export function useCycleDates(groupId: string | undefined) {
       return data;
     },
     enabled: !!groupId,
-    staleTime: 1000 * 60 * 30, // 30 mins
+    staleTime: 1000 * 60 * 30,
   });
 
   useEffect(() => {
-    if (groupSettings) {
-      const today = new Date();
-      // If today is on or after closing day, we are in the next month's cycle
-      if (today.getDate() >= (groupSettings.closing_day || 1)) {
-        setCurrentDate(addMonths(today, 1));
-      } else {
-        setCurrentDate(today);
-      }
-    }
+    if (!groupSettings) return;
+    setCurrentDate(getInitialCycleReferenceDate(new Date(), groupSettings.closing_day || 1));
   }, [groupSettings]);
 
   const closingDay = groupSettings?.closing_day || 1;
   const dueDay = groupSettings?.due_day || 10;
 
-  const cycleStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, closingDay);
-  const cycleEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), closingDay);
-  
-  // Set times to ensure correct comparisons
-  cycleStart.setHours(0, 0, 0, 0);
-  cycleEnd.setHours(0, 0, 0, 0);
-
-  const cycleDueDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dueDay);
-  const cycleLimitDate = subDays(cycleDueDate, 1);
-  const now = new Date();
-  const isLate = isAfter(now, cycleLimitDate) && !isSameDay(now, cycleLimitDate);
+  const { cycleStart, cycleEnd, cycleLimitDate, isLate } = useMemo(
+    () => getCycleDates({ referenceDate: currentDate, closingDay, dueDay }),
+    [currentDate, closingDay, dueDay],
+  );
 
   const nextMonth = () => setCurrentDate((prev) => addMonths(prev, 1));
   const prevMonth = () => setCurrentDate((prev) => subMonths(prev, 1));

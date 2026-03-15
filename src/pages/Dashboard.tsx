@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Users, CreditCard, Wallet, LayoutDashboard, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, subDays, isAfter, isSameDay, addMonths, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { parseLocalDate } from "@/lib/utils";
@@ -18,11 +18,12 @@ import { PersonalTab } from "@/components/dashboard/PersonalTab";
 import { CardsTab } from "@/components/dashboard/CardsTab";
 import { PaymentDialogs, type RateioScope } from "@/components/dashboard/PaymentDialogs";
 import { getCategoryLabel } from "@/constants/categories";
+import { useCycleDates } from "@/hooks/useCycleDates";
+import { getCompetenceKeyFromDate } from "@/lib/cycleDates";
 
 export default function Dashboard() {
   const { profile, membership, user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const now = new Date();
   
   // Payment State
   const [payRateioOpen, setPayRateioOpen] = useState(false);
@@ -34,38 +35,16 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("republic");
   const [heroCompact, setHeroCompact] = useState(false);
 
-  // --- Group Settings & Initial Date Logic ---
-  const { data: groupSettings } = useQuery({
-    queryKey: ["group-settings-dashboard", membership?.group_id],
-    queryFn: async () => {
-      const { data } = await supabase.from("groups").select("closing_day, due_day").eq("id", membership!.group_id).single();
-      return data;
-    },
-    enabled: !!membership?.group_id
-  });
-
-  const closingDay = groupSettings?.closing_day || 1;
-  const dueDay = groupSettings?.due_day || 10;
-
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
-
-  useEffect(() => {
-    if (groupSettings) {
-      const today = new Date();
-      if (today.getDate() >= groupSettings.closing_day) {
-        setCurrentDate(addMonths(today, 1));
-      } else {
-        setCurrentDate(today);
-      }
-    }
-  }, [groupSettings]);
-
-  const cycleStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, closingDay);
-  const cycleEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), closingDay);
-  
-  const cycleDueDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dueDay);
-  const cycleLimitDate = subDays(cycleDueDate, 1);
-  const isLate = isAfter(now, cycleLimitDate) && !isSameDay(now, cycleLimitDate);
+  const {
+    currentDate,
+    cycleStart,
+    cycleEnd,
+    cycleLimitDate,
+    isLate,
+    nextMonth,
+    prevMonth,
+    closingDay,
+  } = useCycleDates(membership?.group_id);
 
   // --- Queries ---
 
@@ -245,26 +224,7 @@ export default function Dashboard() {
 
   const getCompetenceKeyFromPurchaseDate = (purchaseDate?: string | null) => {
     if (!purchaseDate) return null;
-
-    const [yearRaw, monthRaw, dayRaw] = purchaseDate.split("-");
-    const year = Number(yearRaw);
-    const month = Number(monthRaw);
-    const day = Number(dayRaw);
-
-    if (!year || !month || !day) return null;
-
-    let competenceYear = year;
-    let competenceMonth = month;
-
-    if (day >= closingDay) {
-      competenceMonth += 1;
-      if (competenceMonth > 12) {
-        competenceMonth = 1;
-        competenceYear += 1;
-      }
-    }
-
-    return `${competenceYear}-${String(competenceMonth).padStart(2, "0")}`;
+    return getCompetenceKeyFromDate(new Date(`${purchaseDate}T12:00:00`), closingDay);
   };
 
   const paidSplitIds = useMemo(() => {
@@ -463,8 +423,8 @@ export default function Dashboard() {
         cycleStart={cycleStart}
         cycleEnd={cycleEnd}
         cycleLimitDate={cycleLimitDate}
-        onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
-        onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
+        onNextMonth={nextMonth}
+        onPrevMonth={prevMonth}
         compactTabs={compactTabsList}
         onCompactChange={setHeroCompact}
       />
