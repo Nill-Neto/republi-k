@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
+import type { Location } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "./NotificationBell";
 import { UserMenu } from "./UserMenu";
@@ -28,9 +29,12 @@ import {
   Vote,
   Shield
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Sidebar, SidebarBody } from "@/components/ui/animated-sidebar";
+
+const DESKTOP_SIDEBAR_STORAGE_KEY = "app-layout:desktop-sidebar-open";
 
 const sidebarCoreItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Painel Geral" },
@@ -56,13 +60,17 @@ const convenienceItems = [
 export function AppLayout() {
   const { isAdmin } = useAuth();
   const location = useLocation();
-  
-  // Estado único que define se a sidebar está aberta ou fechada
-  const [menuOpen, setMenuOpen] = useState(false);
-  
+
+  // Desktop mantém estado persistente; mobile é controlado por toggle/backdrop.
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(DESKTOP_SIDEBAR_STORAGE_KEY) === "true";
+  });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+  const previousMobileViewport = useRef<boolean | null>(null);
 
   useEffect(() => {
     const el = mainRef.current;
@@ -77,22 +85,57 @@ export function AppLayout() {
     : sidebarCoreItems;
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      DESKTOP_SIDEBAR_STORAGE_KEY,
+      desktopMenuOpen ? "true" : "false"
+    );
+  }, [desktopMenuOpen]);
+
+  useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
 
-    const syncSidebarState = () => {
-      setIsMobileViewport(mediaQuery.matches);
-      // Sempre inicia fechada quando redimensiona para evitar inconsistências
-      setMenuOpen(false);
+    const syncViewport = () => {
+      const isMobile = mediaQuery.matches;
+      const wasMobile = previousMobileViewport.current;
+
+      setIsMobileViewport(isMobile);
+
+      // Evita reset indiscriminado: só fecha o menu móvel ao sair do mobile.
+      if (wasMobile === true && !isMobile) {
+        setMobileMenuOpen(false);
+      }
+
+      previousMobileViewport.current = isMobile;
     };
 
-    syncSidebarState();
+    syncViewport();
 
-    mediaQuery.addEventListener("change", syncSidebarState);
-    return () => mediaQuery.removeEventListener("change", syncSidebarState);
+    mediaQuery.addEventListener("change", syncViewport);
+    return () => mediaQuery.removeEventListener("change", syncViewport);
   }, []);
 
+  const isDesktopExpanded = desktopMenuOpen;
+  const isSidebarExpanded = isMobileViewport ? true : isDesktopExpanded;
+  const isSidebarVisibleOnMobile = isMobileViewport && mobileMenuOpen;
+
+  const handleMenuToggle = () => {
+    if (isMobileViewport) {
+      setMobileMenuOpen((prev) => !prev);
+      return;
+    }
+
+    setDesktopMenuOpen((prev) => !prev);
+  };
+
+  const handleNavItemClick = () => {
+    if (isMobileViewport) {
+      setMobileMenuOpen(false);
+    }
+  };
+
   const Logo = () => (
-    <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
+    <Link to="/dashboard" onClick={handleNavItemClick} className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
         R
       </div>
@@ -100,19 +143,17 @@ export function AppLayout() {
     </Link>
   );
 
-  const isExpanded = isMobileViewport || menuOpen;
-
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className={cn("flex-1 overflow-y-auto py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isExpanded ? "px-3" : "px-2")}>
+      <div className={cn("flex-1 overflow-y-auto py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", isSidebarExpanded ? "px-3" : "px-2")}>
         <nav className="space-y-1">
           {sidebarItems.map((item) => (
             <SidebarNavLink
               key={item.to}
               item={item}
               location={location}
-              onClick={() => setMenuOpen(false)}
-              menuOpen={isExpanded}
+              onClick={handleNavItemClick}
+              menuOpen={isSidebarExpanded}
             />
           ))}
 
@@ -122,8 +163,8 @@ export function AppLayout() {
                 key={item.to}
                 item={item}
                 location={location}
-                onClick={() => setMenuOpen(false)}
-                menuOpen={isExpanded}
+                onClick={handleNavItemClick}
+                menuOpen={isSidebarExpanded}
               />
             ))}
           </div>
@@ -151,9 +192,12 @@ export function AppLayout() {
             variant="ghost"
             size="icon"
             className="h-12 w-12 shrink-0"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={handleMenuToggle}
           >
-            <MenuToggleIcon open={menuOpen} className="h-8 w-8 scale-125" />
+            <MenuToggleIcon
+              open={isMobileViewport ? mobileMenuOpen : desktopMenuOpen}
+              className="h-8 w-8 scale-125"
+            />
             <span className="sr-only">Menu</span>
           </Button>
 
@@ -207,10 +251,10 @@ export function AppLayout() {
       {/* Conteúdo Principal (Sidebar + Main) */}
       <div className="relative flex flex-1 overflow-hidden">
         {/* Backdrop mobile */}
-        {isMobileViewport && menuOpen && (
+        {isSidebarVisibleOnMobile && (
           <div 
             className="absolute inset-0 z-30 bg-background/80 backdrop-blur-sm"
-            onClick={() => setMenuOpen(false)}
+            onClick={() => setMobileMenuOpen(false)}
           />
         )}
 
@@ -218,15 +262,15 @@ export function AppLayout() {
           className={cn(
             "h-full flex shrink-0",
             isMobileViewport 
-              ? cn("absolute left-0 top-0 bottom-0 z-40 transition-transform duration-300", !menuOpen && "-translate-x-full")
+              ? cn("absolute left-0 top-0 bottom-0 z-40 transition-transform duration-300", !mobileMenuOpen && "-translate-x-full")
               : "relative z-20"
           )}
-          onMouseEnter={() => setMenuOpen(true)}
-          onMouseLeave={() => setMenuOpen(false)}
+          onMouseEnter={!isMobileViewport ? () => setDesktopMenuOpen(true) : undefined}
+          onMouseLeave={!isMobileViewport ? () => setDesktopMenuOpen(false) : undefined}
         >
           <Sidebar 
-            open={isMobileViewport ? true : menuOpen} 
-            setOpen={setMenuOpen}
+            open={isSidebarExpanded}
+            setOpen={isMobileViewport ? setMobileMenuOpen : setDesktopMenuOpen}
           >
             <SidebarBody className="justify-between gap-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl !max-w-[230px]">
               <SidebarContent />
@@ -258,8 +302,8 @@ function SidebarNavLink({
   onClick,
   menuOpen,
 }: {
-  item: { to: string; icon: any; label: string };
-  location: any;
+  item: { to: string; icon: LucideIcon; label: string };
+  location: Location;
   onClick: () => void;
   menuOpen: boolean;
 }) {
